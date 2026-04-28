@@ -14,6 +14,12 @@ Local-first CLI for managing sets of `git worktree` directories as persistent wo
 
 This project is **not published to npm yet**.
 
+### Install directly from GitHub
+
+```bash
+npm install -g https://github.com/xunleii/workhub/releases/download/v0.1.0/workhub-0.1.0.tgz
+```
+
 ### Install from a local checkout
 
 ```bash
@@ -42,12 +48,10 @@ npm install -g .
 
 ### Note about `npm install -g git+https://...`
 
-Direct global installation from a Git URL is not the recommended path yet. On some npm setups it can leave a broken global package link, so the supported installation flow remains:
+Direct global installation from a Git URL is not the recommended path yet. On some npm setups it can fail during dependency preparation or leave a broken global package link, so the supported installation flows are:
 
-1. clone the repository;
-2. run `npm install`;
-3. run `npm run build`;
-4. use `npm link` or `npm install -g .`.
+1. install the GitHub release tarball;
+2. or clone the repository, run `npm install`, `npm run build`, then use `npm link` or `npm install -g .`.
 
 ### During development without a global install
 
