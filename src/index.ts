@@ -3,6 +3,7 @@ import { createRequire } from 'module';
 import { Command } from 'commander';
 
 import { newCommand } from './commands/new.js';
+import { openCommand } from './commands/open.js';
 import {
   configExists,
   loadConfig,
@@ -71,7 +72,7 @@ program.option('--origins <path>', 'origins directory (overrides config)');
 program.option('--editor <name>', 'editor binary (overrides config)');
 
 program.addCommand(newCommand);
-program.command('open [name]').description('Open an existing workspace');
+program.addCommand(openCommand);
 program.command('edit <name>').description('Edit an existing workspace');
 program.command('delete <name>').description('Delete a workspace and its worktrees');
 

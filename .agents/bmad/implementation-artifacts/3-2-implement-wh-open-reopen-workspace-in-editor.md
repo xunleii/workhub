@@ -1,6 +1,6 @@
 # Story 3.2: Implement `wh open` — Reopen Workspace in Editor
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,24 +18,24 @@ so that I can restore my working context instantly without any manual steps.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `src/commands/open.ts` — full `wh open` command (AC: #1–#5)
-  - [ ] Define argument: `[name]` (optional workspace name)
-  - [ ] If name given: `loadWorkspace(name)` — catch "not found" error → exit 2
-  - [ ] If name not given and TTY: `listWorkspaceSummaries()` → show empty message and exit 0 if none → `promptWorkspaceSelect(summaries)` → `loadWorkspace(selectedName)`
-  - [ ] If name not given and non-TTY: error "workspace name required in non-TTY mode", exit 2
-  - [ ] Validate editor binary before anything: `validateEditorBinary(config.editor)`
-  - [ ] Separate valid paths from stale paths: check `access()` per path
-  - [ ] If any stale: `printWarning(...)` listing stale paths
-  - [ ] Launch editor with valid paths only via `openWorkspace`-like call (or inline)
-  - [ ] Exit 0
+- [x] Task 1: Implement `src/commands/open.ts` — full `wh open` command (AC: #1–#5)
+  - [x] Define argument: `[name]` (optional workspace name)
+  - [x] If name given: `loadWorkspace(name)` — catch "not found" error → exit 2
+  - [x] If name not given and TTY: `listWorkspaceSummaries()` → show empty message and exit 0 if none → `promptWorkspaceSelect(summaries)` → `loadWorkspace(selectedName)`
+  - [x] If name not given and non-TTY: error "workspace name required in non-TTY mode", exit 2
+  - [x] Validate editor binary before anything: `validateEditorBinary(config.editor)`
+  - [x] Separate valid paths from stale paths: check `access()` per path
+  - [x] If any stale: `printWarning(...)` listing stale paths
+  - [x] Launch editor with valid paths only via `openWorkspace`-like call (or inline)
+  - [x] Exit 0
 
-- [ ] Task 2: Register `src/commands/open.ts` in `src/index.ts` replacing the stub (AC: #1)
-  - [ ] Replace `program.command('open [name]').description(...)` with `program.addCommand(openCommand)`
+- [x] Task 2: Register `src/commands/open.ts` in `src/index.ts` replacing the stub (AC: #1)
+  - [x] Replace `program.command('open [name]').description(...)` with `program.addCommand(openCommand)`
 
-- [ ] Task 3: Write tests in `tests/unit/commands/open.test.ts` (AC: #3, #4, #5)
-  - [ ] Test: stale paths excluded from editor launch, warning printed
-  - [ ] Test: workspace not found → exit 2
-  - [ ] Test: non-TTY without name → exit 2
+- [x] Task 3: Write tests in `tests/unit/commands/open.test.ts` (AC: #3, #4, #5)
+  - [x] Test: stale paths excluded from editor launch, warning printed
+  - [x] Test: workspace not found → exit 2
+  - [x] Test: non-TTY without name → exit 2
 
 ## Dev Notes
 
@@ -127,6 +127,22 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Validation commands: `npm test -- --run tests/unit/commands/open.test.ts`, `npm run build`, `npm test`.
+
 ### Completion Notes List
 
+- Implemented the real `wh open` command in `src/commands/open.ts` with TTY/non-TTY routing, interactive workspace selection, stale-path filtering, and fire-and-forget editor launch.
+- Added the `--status` option stub for the upcoming Story 3.3 while keeping its behavior deferred.
+- Replaced the `open` stub registration in `src/index.ts` and added targeted unit coverage for stale exclusion, missing workspaces, and non-TTY argument enforcement.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/3-2-implement-wh-open-reopen-workspace-in-editor.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/commands/open.ts
+- src/index.ts
+- tests/unit/commands/open.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented `wh open` with workspace selection, stale-path filtering, and command-level tests for the main reopen flows.
