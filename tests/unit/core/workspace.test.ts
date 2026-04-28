@@ -85,6 +85,24 @@ describe('src/core/workspace', () => {
     await expect(listWorkspaces()).resolves.toEqual(['ticket-1234', 'ticket-5678']);
   });
 
+  it('addPath appends a repository entry and persists it atomically', async () => {
+    const { addPath, loadWorkspace, saveWorkspace } = await import('../../../src/core/workspace.js');
+
+    await saveWorkspace(baseWorkspaceConfig);
+    await addPath('ticket-1234', {
+      repo: 'repo-c',
+      path: '/tmp/repos/repo-c/.git/worktrees/feature-new-api',
+    });
+
+    await expect(loadWorkspace('ticket-1234')).resolves.toEqual({
+      ...baseWorkspaceConfig,
+      paths: [
+        ...baseWorkspaceConfig.paths,
+        { repo: 'repo-c', path: '/tmp/repos/repo-c/.git/worktrees/feature-new-api' },
+      ],
+    });
+  });
+
   it('name validation rejects invalid characters before writing', async () => {
     const { resolveWorkspacesDir, saveWorkspace } = await import('../../../src/core/workspace.js');
 

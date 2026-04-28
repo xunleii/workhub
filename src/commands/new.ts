@@ -1,9 +1,10 @@
 import { Command } from 'commander';
-import { basename, dirname, join } from 'node:path';
+import { join } from 'node:path';
 
 import { getActiveConfig } from '../core/config.js';
 import { createWorktree, scanOrigins } from '../core/git.js';
 import {
+  buildWorktreePath,
   listWorkspaces,
   openWorkspace,
   resolveWorkspacesDir,
@@ -26,10 +27,6 @@ import {
 
 function collect(value: string, previous: string[]): string[] {
   return [...previous, value];
-}
-
-function buildWorktreePath(repoPath: string, workspaceName: string): string {
-  return join(dirname(repoPath), `${basename(repoPath)}-${workspaceName}`);
 }
 
 function findSelectedRepositories(repositories: OriginRepo[], names: string[]): OriginRepo[] {

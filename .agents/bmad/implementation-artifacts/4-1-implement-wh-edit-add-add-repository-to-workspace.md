@@ -1,6 +1,6 @@
 # Story 4.1: Implement `wh edit --add` — Add Repository to Workspace
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -17,25 +17,25 @@ so that I can expand my working context without recreating everything from scrat
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `addPath(name, entry)` in `src/core/workspace.ts` (AC: #1)
-  - [ ] Load workspace, append entry to `paths`, call `saveWorkspace` (atomic write)
+- [x] Task 1: Implement `addPath(name, entry)` in `src/core/workspace.ts` (AC: #1)
+  - [x] Load workspace, append entry to `paths`, call `saveWorkspace` (atomic write)
 
-- [ ] Task 2: Implement `src/commands/edit.ts` — `--add` subflow (AC: #1–#4)
-  - [ ] Define options: `--add <repo>`, `--remove <repo>`, `--branch <name>`
-  - [ ] Validate workspace exists (`loadWorkspace`)
-  - [ ] Validate `--add` repo is in origins scan results — if not, exit 2
-  - [ ] Check repo not already in workspace — if it is, exit 2
-  - [ ] If `--branch` missing and TTY: `promptBranchName()`; if non-TTY: exit 2
-  - [ ] Build worktree path: same convention as `wh new` (`<repo.path>-<workspaceName>` adjacent pattern)
-  - [ ] Call `createWorktree(repoPath, branch, worktreePath)`
-  - [ ] Call `addPath(workspaceName, { repo: repoName, path: worktreePath })`
-  - [ ] Print success message
-  - [ ] Register command in `src/index.ts` replacing stub
+- [x] Task 2: Implement `src/commands/edit.ts` — `--add` subflow (AC: #1–#4)
+  - [x] Define options: `--add <repo>`, `--remove <repo>`, `--branch <name>`
+  - [x] Validate workspace exists (`loadWorkspace`)
+  - [x] Validate `--add` repo is in origins scan results — if not, exit 2
+  - [x] Check repo not already in workspace — if it is, exit 2
+  - [x] If `--branch` missing and TTY: `promptBranchName()`; if non-TTY: exit 2
+  - [x] Build worktree path: same convention as `wh new` (`<repo.path>-<workspaceName>` adjacent pattern)
+  - [x] Call `createWorktree(repoPath, branch, worktreePath)`
+  - [x] Call `addPath(workspaceName, { repo: repoName, path: worktreePath })`
+  - [x] Print success message
+  - [x] Register command in `src/index.ts` replacing stub
 
-- [ ] Task 3: Write tests in `tests/unit/commands/edit.test.ts` (AC: #2, #3, #4)
-  - [ ] Test: missing `--branch` in non-TTY → exit 2
-  - [ ] Test: repo not in origins → exit 2, workspace unchanged
-  - [ ] Test: repo already in workspace → exit 2, workspace unchanged
+- [x] Task 3: Write tests in `tests/unit/commands/edit.test.ts` (AC: #2, #3, #4)
+  - [x] Test: missing `--branch` in non-TTY → exit 2
+  - [x] Test: repo not in origins → exit 2, workspace unchanged
+  - [x] Test: repo already in workspace → exit 2, workspace unchanged
 
 ## Dev Notes
 
@@ -134,6 +134,26 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Validation commands: `npm test -- --run tests/unit/commands/new.test.ts tests/unit/commands/edit.test.ts tests/unit/core/workspace.test.ts`, `npm run build`, `npm test`.
+
 ### Completion Notes List
 
+- Added `addPath()` and shared `buildWorktreePath()` in `src/core/workspace.ts` so workspace updates stay atomic and path construction is reused by both `wh new` and `wh edit`.
+- Implemented `src/commands/edit.ts` with the `--add` flow, workspace/origin validation, duplicate-repository guard, branch prompting behavior, worktree creation, and success output.
+- Replaced the `edit` stub in `src/index.ts` and added unit coverage for the new command plus persistence coverage for `addPath()`.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/4-1-implement-wh-edit-add-add-repository-to-workspace.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/commands/edit.ts
+- src/commands/new.ts
+- src/core/workspace.ts
+- src/index.ts
+- tests/unit/commands/edit.test.ts
+- tests/unit/commands/new.test.ts
+- tests/unit/core/workspace.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented `wh edit --add` and shared workspace path building for additive workspace updates.

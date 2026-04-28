@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { access, mkdir, readFile, readdir, rename, rm, unlink, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 
 import yaml from 'js-yaml';
 
@@ -19,6 +19,10 @@ function validateWorkspaceName(name: string): void {
 
 export function resolveWorkspacesDir(): string {
   return join(dirname(resolveConfigPath()), 'workspaces');
+}
+
+export function buildWorktreePath(repoPath: string, workspaceName: string): string {
+  return join(dirname(repoPath), `${basename(repoPath)}-${workspaceName}`);
 }
 
 export async function saveWorkspace(config: WorkspaceConfig): Promise<void> {
@@ -70,6 +74,15 @@ export async function listWorkspaces(): Promise<string[]> {
   } catch {
     return [];
   }
+}
+
+export async function addPath(
+  workspaceName: string,
+  entry: { repo: string; path: string },
+): Promise<void> {
+  const workspace = await loadWorkspace(workspaceName);
+  workspace.paths.push(entry);
+  await saveWorkspace(workspace);
 }
 
 export async function listWorkspaceSummaries(): Promise<WorkspaceSummary[]> {

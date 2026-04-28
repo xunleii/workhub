@@ -2,6 +2,7 @@
 import { createRequire } from 'module';
 import { Command } from 'commander';
 
+import { editCommand } from './commands/edit.js';
 import { newCommand } from './commands/new.js';
 import { openCommand } from './commands/open.js';
 import {
@@ -73,7 +74,7 @@ program.option('--editor <name>', 'editor binary (overrides config)');
 
 program.addCommand(newCommand);
 program.addCommand(openCommand);
-program.command('edit <name>').description('Edit an existing workspace');
+program.addCommand(editCommand);
 program.command('delete <name>').description('Delete a workspace and its worktrees');
 
 await validateGitVersion();

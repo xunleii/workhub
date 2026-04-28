@@ -61,6 +61,7 @@ describe('src/commands/new', () => {
     }));
 
     vi.doMock('../../../src/core/workspace.js', () => ({
+      buildWorktreePath: vi.fn((repoPath: string, workspaceName: string) => `${repoPath}-${workspaceName}`),
       listWorkspaces,
       saveWorkspace,
       resolveWorkspacesDir: vi.fn(() => '/tmp/config/workspaces'),

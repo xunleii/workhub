@@ -68,7 +68,7 @@ development_status:
 
   # Epic 4: Edit Workspace
   epic-4: in-progress
-  4-1-implement-wh-edit-add-add-repository-to-workspace: ready-for-dev
+  4-1-implement-wh-edit-add-add-repository-to-workspace: review
   4-2-implement-wh-edit-remove-disassociate-path-from-workspace: ready-for-dev
   epic-4-retrospective: optional
 
