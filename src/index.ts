@@ -5,6 +5,7 @@ import { Command } from 'commander';
 import { completionCommand } from './commands/completion.js';
 import { deleteCommand } from './commands/delete.js';
 import { editCommand } from './commands/edit.js';
+import { internalCompleteCommand } from './commands/internal-complete.js';
 import { newCommand } from './commands/new.js';
 import { openCommand } from './commands/open.js';
 import {
@@ -76,6 +77,16 @@ function applyFlagOverrides(config: AppConfig, overrides: { origins?: string; ed
   }
 }
 
+/**
+ * Detects whether the current invocation comes from shell-completion helpers.
+ *
+ * @param argv - Raw Node.js argument vector.
+ * @returns `true` for hidden completion subcommands.
+ */
+function isInternalCompletionInvocation(argv: string[]): boolean {
+  return argv.includes('__complete');
+}
+
 const program = new Command();
 
 program
@@ -91,25 +102,35 @@ program.addCommand(openCommand);
 program.addCommand(editCommand);
 program.addCommand(deleteCommand);
 program.addCommand(completionCommand);
-
-await validateGitVersion();
+program.addCommand(internalCompleteCommand);
 
 const setupOverrides = readSetupOverrides(process.argv);
+const internalCompletionInvocation = isInternalCompletionInvocation(process.argv);
 
-if (!(await configExists())) {
+if (!internalCompletionInvocation) {
+  await validateGitVersion();
+}
+
+if (!internalCompletionInvocation && !(await configExists())) {
   const config = await runFirstRunSetup(setupOverrides);
   await saveConfig(config);
 }
 
 try {
-  const activeConfig = await loadConfig();
+  if (await configExists()) {
+    const activeConfig = await loadConfig();
 
-  applyFlagOverrides(activeConfig, setupOverrides);
-  await validateConfig(activeConfig);
-  setActiveConfig(activeConfig);
+    applyFlagOverrides(activeConfig, setupOverrides);
+    if (!internalCompletionInvocation) {
+      await validateConfig(activeConfig);
+    }
+    setActiveConfig(activeConfig);
+  }
 } catch (error) {
-  printError((error as Error).message);
-  exitWithCode(ExitCode.ToolError);
+  if (!internalCompletionInvocation) {
+    printError((error as Error).message);
+    exitWithCode(ExitCode.ToolError);
+  }
 }
 
 await program.parseAsync(process.argv);

@@ -19,20 +19,40 @@ export function renderCompletionScript(shell: SupportedShell): string {
     case 'bash':
       return `# bash completion for wh
 _wh_workspaces() {
-  local workspace_dir="\${XDG_CONFIG_HOME:-$HOME/.config}/workhub/workspaces"
-  if [[ -d "$workspace_dir" ]]; then
-    local file
-    for file in "$workspace_dir"/*.yaml; do
-      [[ -e "$file" ]] || continue
-      basename "$file" .yaml
-    done
-  fi
+  command wh __complete workspaces 2>/dev/null
+}
+
+_wh_repositories() {
+  command wh __complete repos 2>/dev/null
+}
+
+_wh_workspace_repositories() {
+  local workspace_name="$1"
+  [[ -n "$workspace_name" ]] || return
+  command wh __complete workspace-repos "$workspace_name" 2>/dev/null
 }
 
 _wh_complete() {
-  local cur prev subcommand
+  local cur prev subcommand subcommand_index workspace_index workspace_name
   cur="\${COMP_WORDS[COMP_CWORD]}"
   prev="\${COMP_WORDS[COMP_CWORD-1]}"
+
+  local index
+  subcommand_index=0
+  for (( index = 1; index < COMP_CWORD; index++ )); do
+    case "\${COMP_WORDS[index]}" in
+      new|open|edit|delete|completion|help)
+        subcommand="\${COMP_WORDS[index]}"
+        subcommand_index=$index
+        break
+        ;;
+    esac
+  done
+
+  if [[ $subcommand_index -gt 0 ]]; then
+    workspace_index=$((subcommand_index + 1))
+    workspace_name="\${COMP_WORDS[workspace_index]}"
+  fi
 
   case "$prev" in
     --origins)
@@ -41,6 +61,18 @@ _wh_complete() {
       ;;
     --editor)
       COMPREPLY=( $(compgen -c -- "$cur") )
+      return
+      ;;
+    --repo)
+      COMPREPLY=( $(compgen -W "$(_wh_repositories)" -- "$cur") )
+      return
+      ;;
+    --add)
+      COMPREPLY=( $(compgen -W "$(_wh_repositories)" -- "$cur") )
+      return
+      ;;
+    --remove)
+      COMPREPLY=( $(compgen -W "$(_wh_workspace_repositories "$workspace_name")" -- "$cur") )
       return
       ;;
     completion)
@@ -60,16 +92,6 @@ _wh_complete() {
     COMPREPLY=( $(compgen -W "new open edit delete completion help --help --version --origins --editor" -- "$cur") )
     return
   fi
-
-  local index
-  for (( index = 1; index < COMP_CWORD; index++ )); do
-    case "\${COMP_WORDS[index]}" in
-      new|open|edit|delete|completion|help)
-        subcommand="\${COMP_WORDS[index]}"
-        break
-        ;;
-    esac
-  done
 
   case "$subcommand" in
     new)
@@ -111,16 +133,29 @@ complete -F _wh_complete wh
       return `#compdef wh
 
 _wh_workspaces() {
-  local workspace_dir="\${XDG_CONFIG_HOME:-$HOME/.config}/workhub/workspaces"
   local -a workspaces
 
-  if [[ -d "$workspace_dir" ]]; then
-    workspaces=($workspace_dir/*.yaml(N:t:r))
-  else
-    workspaces=()
-  fi
+  workspaces=("\${(@f)$(wh __complete workspaces 2>/dev/null)}")
 
   _describe 'workspace' workspaces
+}
+
+_wh_repositories() {
+  local -a repositories
+
+  repositories=("\${(@f)$(wh __complete repos 2>/dev/null)}")
+
+  _describe 'repository' repositories
+}
+
+_wh_workspace_repositories() {
+  local workspace_name=$words[3]
+  local -a repositories
+
+  [[ -n "$workspace_name" ]] || return
+  repositories=("\${(@f)$(wh __complete workspace-repos "$workspace_name" 2>/dev/null)}")
+
+  _describe 'repository' repositories
 }
 
 _wh() {
@@ -141,7 +176,7 @@ _wh() {
         new)
           _arguments \\
             '1:workspace name:' \\
-            '--repo=[repository to include]:' \\
+            '--repo=[repository to include]:repository:_wh_repositories' \\
             '--branch=[branch name]:' \\
             '--no-open[skip opening in editor]'
           ;;
@@ -156,7 +191,10 @@ _wh() {
           if (( CURRENT == 3 )) && [[ $words[CURRENT] != -* ]]; then
             _wh_workspaces
           else
-            _arguments '--add=[repository to add]:' '--remove=[repository to remove]:' '--branch=[branch name]:'
+            _arguments \\
+              '--add=[repository to add]:repository:_wh_repositories' \\
+              '--remove=[repository to remove]:repository:_wh_workspace_repositories' \\
+              '--branch=[branch name]:'
           fi
           ;;
         delete)
@@ -178,13 +216,36 @@ _wh "$@"
 `;
     case 'fish':
       return `function __wh_workspaces
-    set -l workspace_dir (set -q XDG_CONFIG_HOME; and echo $XDG_CONFIG_HOME; or echo $HOME/.config)/workhub/workspaces
-    if test -d $workspace_dir
-        for file in $workspace_dir/*.yaml
-            if test -e $file
-                basename $file .yaml
+    command wh __complete workspaces 2>/dev/null
+end
+
+function __wh_repositories
+    command wh __complete repos 2>/dev/null
+end
+
+function __wh_workspace_name
+    set -l tokens (commandline -opc)
+    set -l seen_edit 0
+
+    for token in $tokens
+        if test $seen_edit -eq 0
+            if test "$token" = edit
+                set seen_edit 1
             end
+            continue
         end
+
+        if not string match -qr '^-' -- $token
+            echo $token
+            return
+        end
+    end
+end
+
+function __wh_workspace_repositories
+    set -l workspace_name (__wh_workspace_name)
+    if test -n "$workspace_name"
+        command wh __complete workspace-repos $workspace_name 2>/dev/null
     end
 end
 
@@ -195,7 +256,7 @@ complete -c wh -l version -d 'Show version'
 complete -c wh -l origins -r -a '(__fish_complete_directories)' -d 'Origins directory'
 complete -c wh -l editor -r -a '(__fish_complete_command)' -d 'Editor binary'
 
-complete -c wh -n '__fish_seen_subcommand_from new' -l repo -r -d 'Repository to include'
+complete -c wh -n '__fish_seen_subcommand_from new' -l repo -r -a '(__wh_repositories)' -d 'Repository to include'
 complete -c wh -n '__fish_seen_subcommand_from new' -l branch -r -d 'Branch name'
 complete -c wh -n '__fish_seen_subcommand_from new' -l no-open -d 'Skip opening in editor'
 
@@ -203,8 +264,8 @@ complete -c wh -n '__fish_seen_subcommand_from open' -a '(__wh_workspaces)' -d '
 complete -c wh -n '__fish_seen_subcommand_from open' -l status -d 'Show workspace status'
 
 complete -c wh -n '__fish_seen_subcommand_from edit' -a '(__wh_workspaces)' -d 'Workspace name'
-complete -c wh -n '__fish_seen_subcommand_from edit' -l add -r -d 'Repository to add'
-complete -c wh -n '__fish_seen_subcommand_from edit' -l remove -r -d 'Repository to remove'
+complete -c wh -n '__fish_seen_subcommand_from edit' -l add -r -a '(__wh_repositories)' -d 'Repository to add'
+complete -c wh -n '__fish_seen_subcommand_from edit' -l remove -r -a '(__wh_workspace_repositories)' -d 'Repository to remove'
 complete -c wh -n '__fish_seen_subcommand_from edit' -l branch -r -d 'Branch name'
 
 complete -c wh -n '__fish_seen_subcommand_from delete' -a '(__wh_workspaces)' -d 'Workspace name'
