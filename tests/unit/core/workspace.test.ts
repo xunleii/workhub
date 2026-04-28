@@ -30,6 +30,8 @@ describe('src/core/workspace', () => {
     vi.resetModules();
     vi.clearAllMocks();
     vi.doUnmock('node:fs/promises');
+    vi.doUnmock('node:child_process');
+    vi.doUnmock('../../../src/ui/output.js');
     await rm(testDirectory, { recursive: true, force: true });
   });
 
@@ -104,5 +106,63 @@ describe('src/core/workspace', () => {
     await saveWorkspace(baseWorkspaceConfig);
 
     await expect(access(resolveWorkspacesDir())).resolves.toBeUndefined();
+  });
+
+  it('openWorkspace launches the editor with paths in order and detaches the process', async () => {
+    const unref = vi.fn();
+    const spawn = vi.fn(() => ({ unref }));
+
+    vi.doMock('node:child_process', async () => {
+      const actual = await vi.importActual<typeof import('node:child_process')>('node:child_process');
+
+      return {
+        ...actual,
+        spawn,
+      };
+    });
+
+    const { openWorkspace } = await import('../../../src/core/workspace.js');
+
+    openWorkspace(baseWorkspaceConfig, {
+      origins: '/tmp/origins',
+      editor: 'zed',
+    });
+
+    expect(spawn).toHaveBeenCalledWith(
+      'zed',
+      [
+        '/tmp/repos/repo-a/.git/worktrees/feature-new-api',
+        '/tmp/repos/repo-b/.git/worktrees/feature-new-api',
+      ],
+      expect.objectContaining({ detached: true, stdio: 'ignore' }),
+    );
+    expect(unref).toHaveBeenCalledTimes(1);
+  });
+
+  it('validateEditorBinary exits with ToolError for an unknown binary', async () => {
+    const printError = vi.fn();
+    const exitWithCode = vi.fn((code: number) => {
+      throw new Error(`exit:${code}`);
+    });
+
+    vi.doMock('node:child_process', async () => {
+      const actual = await vi.importActual<typeof import('node:child_process')>('node:child_process');
+
+      return {
+        ...actual,
+        spawnSync: vi.fn(() => ({ status: 1 })),
+      };
+    });
+
+    vi.doMock('../../../src/ui/output.js', () => ({
+      printError,
+      exitWithCode,
+    }));
+
+    const { validateEditorBinary } = await import('../../../src/core/workspace.js');
+
+    expect(() => validateEditorBinary('missing-editor')).toThrow('exit:2');
+    expect(printError).toHaveBeenCalledWith('editor not found in PATH: missing-editor');
+    expect(exitWithCode).toHaveBeenCalledWith(2);
   });
 });

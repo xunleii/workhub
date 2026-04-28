@@ -56,7 +56,7 @@ development_status:
   2-2-implement-workspace-persistence-layer: review
   2-3-implement-git-worktree-creation: review
   2-4-implement-wh-new-interactive-workspace-creation: review
-  2-5-implement-editor-launch: ready-for-dev
+  2-5-implement-editor-launch: review
   epic-2-retrospective: optional
 
   # Epic 3: Open and Inspect Workspaces

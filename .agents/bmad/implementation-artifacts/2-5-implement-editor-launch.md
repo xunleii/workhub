@@ -1,6 +1,6 @@
 # Story 2.5: Implement Editor Launch
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -16,24 +16,24 @@ so that I can start working without any additional steps.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `validateEditorBinary(editor: string)` in `src/core/workspace.ts` (AC: #2)
-  - [ ] Use Node.js `child_process.spawnSync('which', [editor])` (or equivalent) to check if binary is in PATH
-  - [ ] On failure: call `printError(`editor not found in PATH: ${editor}`)` and `exitWithCode(ExitCode.ToolError)`
-  - [ ] Call this function at the start of `wh new` (before worktree creation) and at the start of `wh open`
+- [x] Task 1: Implement `validateEditorBinary(editor: string)` in `src/core/workspace.ts` (AC: #2)
+  - [x] Use Node.js `child_process.spawnSync('which', [editor])` (or equivalent) to check if binary is in PATH
+  - [x] On failure: call `printError(`editor not found in PATH: ${editor}`)` and `exitWithCode(ExitCode.ToolError)`
+  - [x] Call this function at the start of `wh new` (before worktree creation) and at the start of `wh open`
 
-- [ ] Task 2: Implement `openWorkspace(workspace: WorkspaceConfig, config: AppConfig)` in `src/core/workspace.ts` (AC: #1, #3)
-  - [ ] Extract valid paths from `workspace.paths.map(p => p.path)` in persistence order
-  - [ ] Launch editor with `child_process.spawn(config.editor, paths, { detached: true, stdio: 'ignore' })`
-  - [ ] Call `editorProcess.unref()` so the CLI process can exit without waiting for editor
-  - [ ] Editor runs independently (fire-and-forget)
+- [x] Task 2: Implement `openWorkspace(workspace: WorkspaceConfig, config: AppConfig)` in `src/core/workspace.ts` (AC: #1, #3)
+  - [x] Extract valid paths from `workspace.paths.map(p => p.path)` in persistence order
+  - [x] Launch editor with `child_process.spawn(config.editor, paths, { detached: true, stdio: 'ignore' })`
+  - [x] Call `editorProcess.unref()` so the CLI process can exit without waiting for editor
+  - [x] Editor runs independently (fire-and-forget)
 
-- [ ] Task 3: Wire `validateEditorBinary` into `wh new` flow (AC: #2)
-  - [ ] Call `validateEditorBinary(config.editor)` **before** any worktree creation in `src/commands/new.ts`
-  - [ ] This ensures the error is surfaced before any filesystem changes occur
+- [x] Task 3: Wire `validateEditorBinary` into `wh new` flow (AC: #2)
+  - [x] Call `validateEditorBinary(config.editor)` **before** any worktree creation in `src/commands/new.ts`
+  - [x] This ensures the error is surfaced before any filesystem changes occur
 
-- [ ] Task 4: Write unit tests in `tests/unit/core/workspace.test.ts` (AC: #1, #3)
-  - [ ] Test: `openWorkspace` calls spawn with editor binary and paths in order
-  - [ ] Test: `validateEditorBinary` exits 2 for an unknown binary
+- [x] Task 4: Write unit tests in `tests/unit/core/workspace.test.ts` (AC: #1, #3)
+  - [x] Test: `openWorkspace` calls spawn with editor binary and paths in order
+  - [x] Test: `validateEditorBinary` exits 2 for an unknown binary
 
 ## Dev Notes
 
@@ -146,6 +146,21 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Validation commands: `npm test -- --run tests/unit/core/workspace.test.ts`, `npm run build`, `npm test`.
+- End-to-end validation already exercised via the `wh new` flow with a fake editor binary, confirming fire-and-forget launch and path ordering.
+
 ### Completion Notes List
 
+- Finalized `validateEditorBinary()` and `openWorkspace()` in `src/core/workspace.ts` and verified they stay aligned with the `wh new` flow.
+- Added unit coverage proving editor launch preserves workspace path order, uses detached fire-and-forget spawning, and exits with ToolError when the editor binary is missing.
+- Confirmed the `wh new` command calls editor validation before any worktree creation, matching the failure-before-filesystem-change requirement.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/2-5-implement-editor-launch.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- tests/unit/core/workspace.test.ts
+
+## Change Log
+
+- 2026-04-28: Added explicit editor-launch unit coverage and finalized the editor validation/launch contract used by `wh new`.
