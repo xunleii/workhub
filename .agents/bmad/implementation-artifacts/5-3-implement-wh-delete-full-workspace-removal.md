@@ -1,6 +1,6 @@
 # Story 5.3: Implement `wh delete` — Full Workspace Removal
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -20,26 +20,26 @@ so that I can clean up completed work without manually running `git worktree rem
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `removeWorktree(repoPath, worktreePath)` in `src/core/git.ts` (AC: #1, #6)
-  - [ ] Use `simpleGit(repoPath).raw(['worktree', 'remove', worktreePath])`
-  - [ ] Throw on failure (caller handles best-effort)
+- [x] Task 1: Implement `removeWorktree(repoPath, worktreePath)` in `src/core/git.ts` (AC: #1, #6)
+  - [x] Use `simpleGit(repoPath).raw(['worktree', 'remove', worktreePath])`
+  - [x] Throw on failure (caller handles best-effort)
 
-- [ ] Task 2: Implement `src/commands/delete.ts` — full `wh delete` command (AC: #1–#7)
-  - [ ] Define argument `<name>` (required), option `--force`
-  - [ ] Load workspace — exit 2 if not found (AC #5)
-  - [ ] Build `PreviewOperation[]`: REMOVE per worktree path + DELETE workspace YAML
-  - [ ] Call `runDestructiveFlow({ paths: workspace.paths, operations, force: opts.force })`
-  - [ ] Execute worktree removals: for each path, call `removeWorktree(repoBasePath, worktreePath)` with error capture (best-effort — AC #6)
-  - [ ] Delete workspace YAML: `deleteWorkspace(name)` — even if some worktrees failed
-  - [ ] If any worktree removal failed: exit 2; otherwise exit 0
-  - [ ] Register command in `src/index.ts` replacing stub
+- [x] Task 2: Implement `src/commands/delete.ts` — full `wh delete` command (AC: #1–#7)
+  - [x] Define argument `<name>` (required), option `--force`
+  - [x] Load workspace — exit 2 if not found (AC #5)
+  - [x] Build `PreviewOperation[]`: REMOVE per worktree path + DELETE workspace YAML
+  - [x] Call `runDestructiveFlow({ paths: workspace.paths, operations, force: opts.force })`
+  - [x] Execute worktree removals: for each path, call `removeWorktree(repoBasePath, worktreePath)` with error capture (best-effort — AC #6)
+  - [x] Delete workspace YAML: `deleteWorkspace(name)` — even if some worktrees failed
+  - [x] If any worktree removal failed: exit 2; otherwise exit 0
+  - [x] Register command in `src/index.ts` replacing stub
 
-- [ ] Task 3: Write tests in `tests/unit/commands/delete.test.ts` (AC: #2, #4, #5, #6, #7)
-  - [ ] Test: workspace not found → exit 2, nothing deleted
-  - [ ] Test: dirty worktree → exit 3, nothing deleted
-  - [ ] Test: `--force` + unpushed → exit 3 (--force does not bypass)
-  - [ ] Test: successful delete with `--force` skips confirmation
-  - [ ] Test: non-TTY without `--force` → exit 2
+- [x] Task 3: Write tests in `tests/unit/commands/delete.test.ts` (AC: #2, #4, #5, #6, #7)
+  - [x] Test: workspace not found → exit 2, nothing deleted
+  - [x] Test: dirty worktree → exit 3, nothing deleted
+  - [x] Test: `--force` + unpushed → exit 3 (--force does not bypass)
+  - [x] Test: successful delete with `--force` skips confirmation
+  - [x] Test: non-TTY without `--force` → exit 2
 
 ## Dev Notes
 
@@ -184,6 +184,23 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Validation commands: `npm test -- --run tests/unit/commands/delete.test.ts tests/unit/core/git.test.ts tests/unit/ui/prompts.test.ts`, `npm run build`, `npm test`.
+
 ### Completion Notes List
 
+- Added `removeWorktree()` to the Git core and implemented `src/commands/delete.ts` with shared safety/preview flow, worktree removal, workspace YAML deletion, and best-effort cleanup semantics.
+- Replaced the final CLI stub in `src/index.ts`, so all planned commands are now wired through real implementations.
+- Added command-level coverage for missing workspaces, safety blocking, forced deletion, non-interactive refusal without `--force`, and partial cleanup failures.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/5-3-implement-wh-delete-full-workspace-removal.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/commands/delete.ts
+- src/core/git.ts
+- src/index.ts
+- tests/unit/commands/delete.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented `wh delete` with safety gating, preview/confirmation, and best-effort workspace cleanup.

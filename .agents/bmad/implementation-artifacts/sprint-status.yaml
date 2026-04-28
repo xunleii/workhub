@@ -76,5 +76,5 @@ development_status:
   epic-5: in-progress
   5-1-implement-git-safety-checks: review
   5-2-implement-operation-preview-and-confirmation: review
-  5-3-implement-wh-delete-full-workspace-removal: ready-for-dev
+  5-3-implement-wh-delete-full-workspace-removal: review
   epic-5-retrospective: optional

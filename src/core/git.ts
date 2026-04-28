@@ -85,6 +85,10 @@ export async function createWorktree(
   }
 }
 
+export async function removeWorktree(repoPath: string, worktreePath: string): Promise<void> {
+  await simpleGit(repoPath).raw(['worktree', 'remove', worktreePath]);
+}
+
 export async function checkDirty(repoPath: string): Promise<boolean> {
   try {
     await access(repoPath);
