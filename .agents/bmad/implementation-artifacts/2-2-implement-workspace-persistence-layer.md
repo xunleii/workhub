@@ -1,6 +1,6 @@
 # Story 2.2: Implement Workspace Persistence Layer
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,39 +18,39 @@ so that my working contexts persist across shell sessions and machine restarts.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `resolveWorkspacesDir()` in `src/core/workspace.ts` (AC: #1, #5)
-  - [ ] Return `dirname(resolveConfigPath()) + '/workspaces'` — reuse `resolveConfigPath` from `config.ts`
-  - [ ] Import `resolveConfigPath` from `../core/config.js`
+- [x] Task 1: Implement `resolveWorkspacesDir()` in `src/core/workspace.ts` (AC: #1, #5)
+  - [x] Return `dirname(resolveConfigPath()) + '/workspaces'` — reuse `resolveConfigPath` from `config.ts`
+  - [x] Import `resolveConfigPath` from `../core/config.js`
 
-- [ ] Task 2: Implement `saveWorkspace(config: WorkspaceConfig)` with atomic write (AC: #1, #4, #5)
-  - [ ] Validate workspace name: `/^[a-z0-9-]+$/i` — throw descriptive error if invalid
-  - [ ] Create workspaces directory if absent with `mkdir({ recursive: true })`
-  - [ ] Write YAML to `<name>.yaml.tmp` using `js-yaml.dump()`
-  - [ ] Rename `.tmp` to `<name>.yaml` using `fs.rename()` (atomic on POSIX)
-  - [ ] On any error: attempt to delete `.tmp`, then rethrow
+- [x] Task 2: Implement `saveWorkspace(config: WorkspaceConfig)` with atomic write (AC: #1, #4, #5)
+  - [x] Validate workspace name: `/^[a-z0-9-]+$/i` — throw descriptive error if invalid
+  - [x] Create workspaces directory if absent with `mkdir({ recursive: true })`
+  - [x] Write YAML to `<name>.yaml.tmp` using `js-yaml.dump()`
+  - [x] Rename `.tmp` to `<name>.yaml` using `fs.rename()` (atomic on POSIX)
+  - [x] On any error: attempt to delete `.tmp`, then rethrow
 
-- [ ] Task 3: Implement `loadWorkspace(name: string)` (AC: #2)
-  - [ ] Read `<name>.yaml` from workspaces dir
-  - [ ] Parse with `js-yaml.load()`, cast to `WorkspaceConfig`
-  - [ ] Throw `Error(`Workspace not found: ${name}`)` if file does not exist
+- [x] Task 3: Implement `loadWorkspace(name: string)` (AC: #2)
+  - [x] Read `<name>.yaml` from workspaces dir
+  - [x] Parse with `js-yaml.load()`, cast to `WorkspaceConfig`
+  - [x] Throw `Error(`Workspace not found: ${name}`)` if file does not exist
 
-- [ ] Task 4: Implement `listWorkspaces()` (AC: #3)
-  - [ ] Read workspaces directory with `readdir`
-  - [ ] Filter for `.yaml` files (not `.tmp`)
-  - [ ] Return names by stripping `.yaml` extension
-  - [ ] Return empty array if directory does not exist (not an error)
+- [x] Task 4: Implement `listWorkspaces()` (AC: #3)
+  - [x] Read workspaces directory with `readdir`
+  - [x] Filter for `.yaml` files (not `.tmp`)
+  - [x] Return names by stripping `.yaml` extension
+  - [x] Return empty array if directory does not exist (not an error)
 
-- [ ] Task 5: Implement `deleteWorkspace(name: string)` (for Story 5.3 but natural to implement here)
-  - [ ] Delete `<name>.yaml` from workspaces dir
-  - [ ] Throw `Error(`Workspace not found: ${name}`)` if file does not exist
+- [x] Task 5: Implement `deleteWorkspace(name: string)` (for Story 5.3 but natural to implement here)
+  - [x] Delete `<name>.yaml` from workspaces dir
+  - [x] Throw `Error(`Workspace not found: ${name}`)` if file does not exist
 
-- [ ] Task 6: Write unit tests in `tests/unit/core/workspace.test.ts` (AC: #1–#5)
-  - [ ] Test: `saveWorkspace` writes correct YAML file
-  - [ ] Test: atomic write — tmp is cleaned up on failure (mock `rename` to throw)
-  - [ ] Test: `loadWorkspace` returns correct typed object
-  - [ ] Test: `listWorkspaces` returns all workspace names
-  - [ ] Test: name validation rejects invalid characters
-  - [ ] Test: workspaces directory is created automatically
+- [x] Task 6: Write unit tests in `tests/unit/core/workspace.test.ts` (AC: #1–#5)
+  - [x] Test: `saveWorkspace` writes correct YAML file
+  - [x] Test: atomic write — tmp is cleaned up on failure (mock `rename` to throw)
+  - [x] Test: `loadWorkspace` returns correct typed object
+  - [x] Test: `listWorkspaces` returns all workspace names
+  - [x] Test: name validation rejects invalid characters
+  - [x] Test: workspaces directory is created automatically
 
 ## Dev Notes
 
@@ -181,6 +181,22 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Red phase: `npm test -- --run tests/unit/core/workspace.test.ts` failed before implementation because the workspace persistence functions were still missing from `src/core/workspace.ts`.
+- Validation commands: `npm test -- --run tests/unit/core/workspace.test.ts`, `npm run build`, `npm test`.
+
 ### Completion Notes List
 
+- Implemented workspace directory resolution, atomic YAML writes, loading, listing, and deletion in `src/core/workspace.ts`.
+- Added workspace name validation before any filesystem write and defaulted `created_at` during save when missing.
+- Added unit tests covering atomic cleanup on rename failure, load/list behavior, invalid names, and automatic workspaces-directory creation.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/2-2-implement-workspace-persistence-layer.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/core/workspace.ts
+- tests/unit/core/workspace.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented the workspace persistence layer with atomic writes, filesystem-backed load/list/delete operations, and unit coverage for all persistence behaviors.
