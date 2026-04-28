@@ -12,6 +12,7 @@
     "completion:fish": "node dist/index.js completion fish",
     "completion:zsh": "node dist/index.js completion zsh",
     "dev": "tsc --watch",
+    "prepare": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest"
   },

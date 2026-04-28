@@ -10,11 +10,11 @@ Local-first CLI for managing sets of `git worktree` directories as persistent wo
 - add or remove repositories from an existing workspace;
 - safely delete a workspace once the work is done.
 
-## Current installation model
+## Installation
 
-This project is currently installed **from source**. It is **not published to npm yet**.
+This project is **not published to npm yet**.
 
-### Install for local use
+### Install from a local checkout
 
 ```bash
 git clone <your-repo-url> workhub
@@ -39,6 +39,15 @@ npm install
 npm run build
 npm install -g .
 ```
+
+### Note about `npm install -g git+https://...`
+
+Direct global installation from a Git URL is not the recommended path yet. On some npm setups it can leave a broken global package link, so the supported installation flow remains:
+
+1. clone the repository;
+2. run `npm install`;
+3. run `npm run build`;
+4. use `npm link` or `npm install -g .`.
 
 ### During development without a global install
 
