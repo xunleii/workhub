@@ -20,6 +20,9 @@ import {
 } from '../ui/output.js';
 import { promptWorkspaceSelect } from '../ui/prompts.js';
 
+/**
+ * Implements the `wh open` command.
+ */
 export const openCommand = new Command('open')
   .description('Open an existing workspace')
   .argument('[name]', 'workspace name')

@@ -8,6 +8,9 @@
   },
   "scripts": {
     "build": "tsc",
+    "completion:bash": "node dist/index.js completion bash",
+    "completion:fish": "node dist/index.js completion fish",
+    "completion:zsh": "node dist/index.js completion zsh",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest"

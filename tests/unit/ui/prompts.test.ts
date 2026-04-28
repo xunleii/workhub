@@ -25,9 +25,11 @@ describe('src/ui/prompts', () => {
     const originsDirectory = await mkdtemp(join(tmpdir(), 'workhub-prompts-'));
     temporaryDirectories.push(originsDirectory);
     const clackText = vi.fn();
+    const clackPath = vi.fn();
 
     vi.doMock('@clack/prompts', () => ({
       intro: vi.fn(),
+      path: clackPath,
       text: clackText,
       isCancel: vi.fn(() => false),
       cancel: vi.fn(),
@@ -53,6 +55,7 @@ describe('src/ui/prompts', () => {
     });
 
     expect(clackText).not.toHaveBeenCalled();
+    expect(clackPath).not.toHaveBeenCalled();
   });
 
   it('exits with ToolError in non-TTY mode when origins override is missing', async () => {
@@ -63,6 +66,7 @@ describe('src/ui/prompts', () => {
 
     vi.doMock('@clack/prompts', () => ({
       intro: vi.fn(),
+      path: vi.fn(),
       text: vi.fn(),
       isCancel: vi.fn(() => false),
       cancel: vi.fn(),
@@ -93,7 +97,8 @@ describe('src/ui/prompts', () => {
 
     vi.doMock('@clack/prompts', () => ({
       intro: vi.fn(),
-      text: vi.fn(async () => cancelToken),
+      path: vi.fn(async () => cancelToken),
+      text: vi.fn(),
       isCancel: vi.fn((value: unknown) => value === cancelToken),
       cancel: clackCancel,
       outro: vi.fn(),
@@ -110,6 +115,98 @@ describe('src/ui/prompts', () => {
     await expect(runFirstRunSetup()).rejects.toThrow('exit:1');
     expect(clackCancel).toHaveBeenCalledWith('Setup cancelled.');
     expect(exitWithCode).toHaveBeenCalledWith(1);
+  });
+
+  it('uses the clack path prompt for origins in TTY mode', async () => {
+    const originsDirectory = await mkdtemp(join(tmpdir(), 'workhub-prompts-tty-'));
+    temporaryDirectories.push(originsDirectory);
+    const clackPath = vi.fn(async () => originsDirectory);
+    const clackText = vi.fn(async () => 'zed');
+
+    vi.doMock('@clack/prompts', () => ({
+      intro: vi.fn(),
+      path: clackPath,
+      text: clackText,
+      isCancel: vi.fn(() => false),
+      cancel: vi.fn(),
+      outro: vi.fn(),
+    }));
+
+    vi.doMock('../../../src/core/git.js', () => ({
+      runSafetyChecks: vi.fn(),
+    }));
+
+    vi.doMock('../../../src/ui/output.js', () => ({
+      isTTY: true,
+      exitWithCode: vi.fn(),
+      printError: vi.fn(),
+      printPreview: vi.fn(),
+      printSafetyWarning: vi.fn(),
+    }));
+
+    const { runFirstRunSetup } = await import('../../../src/ui/prompts.js');
+
+    await expect(runFirstRunSetup()).resolves.toEqual({
+      origins: originsDirectory,
+      editor: 'zed',
+    });
+
+    expect(clackPath).toHaveBeenCalledWith(
+      expect.objectContaining({
+        directory: true,
+        message: 'Path to your repositories root directory (origins):',
+      }),
+    );
+    expect(clackText).toHaveBeenCalled();
+  });
+
+  it('sorts repository choices alphabetically by displayed name', async () => {
+    const clackMultiselect = vi.fn(async () => ['group-a/api', 'group-a/web']);
+
+    vi.doMock('@clack/prompts', () => ({
+      intro: vi.fn(),
+      path: vi.fn(),
+      text: vi.fn(),
+      confirm: vi.fn(),
+      isCancel: vi.fn(() => false),
+      cancel: vi.fn(),
+      outro: vi.fn(),
+      select: vi.fn(),
+      multiselect: clackMultiselect,
+    }));
+
+    vi.doMock('../../../src/core/git.js', () => ({
+      runSafetyChecks: vi.fn(),
+    }));
+
+    vi.doMock('../../../src/ui/output.js', () => ({
+      isTTY: true,
+      exitWithCode: vi.fn(),
+      printError: vi.fn(),
+      printPreview: vi.fn(),
+      printSafetyWarning: vi.fn(),
+    }));
+
+    const { promptRepoSelection } = await import('../../../src/ui/prompts.js');
+
+    await expect(
+      promptRepoSelection([
+        { name: 'group-a/web', path: '/tmp/group-a/web' },
+        { name: 'group-b/mobile', path: '/tmp/group-b/mobile' },
+        { name: 'group-a/api', path: '/tmp/group-a/api' },
+      ]),
+    ).resolves.toEqual([
+      { name: 'group-a/api', path: '/tmp/group-a/api' },
+      { name: 'group-a/web', path: '/tmp/group-a/web' },
+    ]);
+
+    expect(clackMultiselect).toHaveBeenCalledWith(expect.objectContaining({
+      options: [
+        { value: 'group-a/api', label: 'api', hint: 'group-a/api' },
+        { value: 'group-b/mobile', label: 'mobile', hint: 'group-b/mobile' },
+        { value: 'group-a/web', label: 'web', hint: 'group-a/web' },
+      ],
+    }));
   });
 
   it('promptConfirm exits with UserAbort when confirmation is declined', async () => {

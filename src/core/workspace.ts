@@ -11,20 +11,43 @@ import { exitWithCode, printError } from '../ui/output.js';
 
 const VALID_WORKSPACE_NAME = /^[a-zA-Z0-9-]+$/;
 
+/**
+ * Ensures workspace names stay compatible with on-disk file naming.
+ *
+ * @param name - Candidate workspace name.
+ * @throws {Error} When the name contains unsupported characters.
+ */
 function validateWorkspaceName(name: string): void {
   if (!VALID_WORKSPACE_NAME.test(name)) {
     throw new Error(`Invalid workspace name: "${name}". Use only alphanumeric characters and hyphens.`);
   }
 }
 
+/**
+ * Resolves the directory where workspace manifests are stored.
+ *
+ * @returns Absolute path to the workspaces directory.
+ */
 export function resolveWorkspacesDir(): string {
   return join(dirname(resolveConfigPath()), 'workspaces');
 }
 
+/**
+ * Builds the on-disk worktree path for a repository/workspace combination.
+ *
+ * @param repoPath - Absolute path of the source repository under origins.
+ * @param workspaceName - Workspace name used as the worktree grouping directory.
+ * @returns Absolute path of the derived worktree location inside the repository Git metadata.
+ */
 export function buildWorktreePath(repoPath: string, workspaceName: string): string {
-  return join(dirname(repoPath), `${basename(repoPath)}-${workspaceName}`);
+  return join(repoPath, '.git', 'worktrees', workspaceName, basename(repoPath));
 }
 
+/**
+ * Persists a workspace manifest using an atomic write strategy.
+ *
+ * @param config - Workspace configuration to serialize.
+ */
 export async function saveWorkspace(config: WorkspaceConfig): Promise<void> {
   validateWorkspaceName(config.name);
 
@@ -52,6 +75,13 @@ export async function saveWorkspace(config: WorkspaceConfig): Promise<void> {
   }
 }
 
+/**
+ * Loads a workspace manifest by name.
+ *
+ * @param name - Workspace identifier.
+ * @returns Parsed workspace configuration.
+ * @throws {Error} When the workspace manifest cannot be read.
+ */
 export async function loadWorkspace(name: string): Promise<WorkspaceConfig> {
   const workspacePath = join(resolveWorkspacesDir(), `${name}.yaml`);
 
@@ -63,6 +93,11 @@ export async function loadWorkspace(name: string): Promise<WorkspaceConfig> {
   }
 }
 
+/**
+ * Lists saved workspaces, sorted by name.
+ *
+ * @returns Workspace names discovered in the manifest directory.
+ */
 export async function listWorkspaces(): Promise<string[]> {
   try {
     const entries = await readdir(resolveWorkspacesDir());
@@ -76,6 +111,12 @@ export async function listWorkspaces(): Promise<string[]> {
   }
 }
 
+/**
+ * Appends a repository entry to an existing workspace and saves the result.
+ *
+ * @param workspaceName - Workspace to update.
+ * @param entry - Repository/path pair to append.
+ */
 export async function addPath(
   workspaceName: string,
   entry: { repo: string; path: string },
@@ -85,6 +126,14 @@ export async function addPath(
   await saveWorkspace(workspace);
 }
 
+/**
+ * Removes a repository entry from an existing workspace without touching disk.
+ *
+ * @param workspaceName - Workspace to update.
+ * @param repoName - Repository identifier to remove.
+ * @returns The worktree path that was disassociated from the workspace.
+ * @throws {Error} When the repository is not part of the workspace.
+ */
 export async function removePath(workspaceName: string, repoName: string): Promise<string> {
   const workspace = await loadWorkspace(workspaceName);
   const index = workspace.paths.findIndex((workspacePath) => workspacePath.repo === repoName);
@@ -99,6 +148,11 @@ export async function removePath(workspaceName: string, repoName: string): Promi
   return removedPath.path;
 }
 
+/**
+ * Produces lightweight workspace summaries including stale-path counts.
+ *
+ * @returns Sorted summaries suitable for interactive selection UIs.
+ */
 export async function listWorkspaceSummaries(): Promise<WorkspaceSummary[]> {
   const workspaceNames = await listWorkspaces();
   const summaries = await Promise.all(
@@ -125,6 +179,12 @@ export async function listWorkspaceSummaries(): Promise<WorkspaceSummary[]> {
   return summaries.sort((left, right) => left.name.localeCompare(right.name));
 }
 
+/**
+ * Deletes a persisted workspace manifest.
+ *
+ * @param name - Workspace name to remove.
+ * @throws {Error} When the workspace manifest does not exist.
+ */
 export async function deleteWorkspace(name: string): Promise<void> {
   const workspacePath = join(resolveWorkspacesDir(), `${name}.yaml`);
 
@@ -135,6 +195,11 @@ export async function deleteWorkspace(name: string): Promise<void> {
   }
 }
 
+/**
+ * Verifies that the configured editor executable is available in `PATH`.
+ *
+ * @param editor - Binary name to resolve.
+ */
 export function validateEditorBinary(editor: string): void {
   const result = spawnSync('which', [editor], { encoding: 'utf8' });
 
@@ -144,6 +209,14 @@ export function validateEditorBinary(editor: string): void {
   }
 }
 
+/**
+ * Launches the configured editor with every path from a workspace.
+ *
+ * The editor process is detached so the CLI can exit immediately.
+ *
+ * @param workspace - Workspace whose paths should be opened.
+ * @param config - Active application configuration.
+ */
 export function openWorkspace(workspace: WorkspaceConfig, config: AppConfig): void {
   const paths = workspace.paths.map((workspacePath) => workspacePath.path);
   const editorProcess = spawn(config.editor, paths, {

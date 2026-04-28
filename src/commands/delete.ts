@@ -9,6 +9,9 @@ import { exitWithCode, printError } from '../ui/output.js';
 import type { PreviewOperation } from '../ui/output.js';
 import { runDestructiveFlow } from '../ui/prompts.js';
 
+/**
+ * Implements the `wh delete` command.
+ */
 export const deleteCommand = new Command('delete')
   .description('Delete a workspace and its worktrees')
   .argument('<name>', 'workspace name')

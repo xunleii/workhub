@@ -26,13 +26,14 @@ describe('src/commands/edit', () => {
       name: 'ticket-1234',
       branch: 'feature/x',
       created_at: '2026-04-28T00:00:00.000Z',
-      paths: options?.workspacePaths ?? [{ repo: 'repo-a', path: '/tmp/repo-a-ticket-1234' }],
+      paths: options?.workspacePaths ?? [{ repo: 'repo-a', path: '/tmp/repo-a/.git/worktrees/ticket-1234/repo-a' }],
     }));
     const printError = vi.fn();
     const printSuccess = vi.fn();
     const promptBranchName = vi.fn(async () => 'feature/x');
     const removePath = vi.fn(
-      options?.removePathImplementation ?? (async (_workspaceName: string, repoName: string) => `/tmp/${repoName}-ticket-1234`),
+      options?.removePathImplementation ??
+        (async (_workspaceName: string, repoName: string) => `/tmp/${repoName}/.git/worktrees/ticket-1234/${repoName}`),
     );
     const scanOrigins = vi.fn(async () => options?.repositories ?? [{ name: 'repo-b', path: '/tmp/repo-b' }]);
 
@@ -52,12 +53,15 @@ describe('src/commands/edit', () => {
 
     vi.doMock('../../../src/core/git.js', () => ({
       createWorktree,
+      findOriginRepo: vi.fn((repositories: Array<{ name: string; path: string }>, name: string) =>
+        repositories.find((repository) => repository.name === name || repository.name.split('/').at(-1) === name) ?? null),
       scanOrigins,
     }));
 
     vi.doMock('../../../src/core/workspace.js', () => ({
       addPath,
-      buildWorktreePath: vi.fn((repoPath: string, workspaceName: string) => `${repoPath}-${workspaceName}`),
+      buildWorktreePath: vi.fn((repoPath: string, workspaceName: string) =>
+        `${repoPath}/.git/worktrees/${workspaceName}/${repoPath.split('/').at(-1)}`),
       loadWorkspace,
       removePath,
     }));
@@ -115,7 +119,7 @@ describe('src/commands/edit', () => {
 
   it('repo already in workspace exits with ToolError without modifying the workspace', async () => {
     const { editCommand, mocks } = await loadEditCommand({
-      workspacePaths: [{ repo: 'repo-b', path: '/tmp/repo-b-ticket-1234' }],
+      workspacePaths: [{ repo: 'repo-b', path: '/tmp/repo-b/.git/worktrees/ticket-1234/repo-b' }],
     });
 
     await expect(
@@ -138,10 +142,14 @@ describe('src/commands/edit', () => {
       { from: 'node' },
     );
 
-    expect(mocks.createWorktree).toHaveBeenCalledWith('/tmp/repo-b', 'feature/x', '/tmp/repo-b-ticket-1234');
+    expect(mocks.createWorktree).toHaveBeenCalledWith(
+      '/tmp/repo-b',
+      'feature/x',
+      '/tmp/repo-b/.git/worktrees/ticket-1234/repo-b',
+    );
     expect(mocks.addPath).toHaveBeenCalledWith('ticket-1234', {
       repo: 'repo-b',
-      path: '/tmp/repo-b-ticket-1234',
+      path: '/tmp/repo-b/.git/worktrees/ticket-1234/repo-b',
     });
     expect(mocks.printSuccess).toHaveBeenCalledWith('Added repo-b to workspace ticket-1234');
   });
@@ -156,7 +164,7 @@ describe('src/commands/edit', () => {
     expect(mocks.addPath).not.toHaveBeenCalled();
     expect(mocks.promptBranchName).not.toHaveBeenCalled();
     expect(mocks.printSuccess).toHaveBeenCalledWith(
-      'Removed repo-b from workspace. Worktree at /tmp/repo-b-ticket-1234 is untouched.',
+      'Removed repo-b from workspace. Worktree at /tmp/repo-b/.git/worktrees/ticket-1234/repo-b is untouched.',
     );
   });
 

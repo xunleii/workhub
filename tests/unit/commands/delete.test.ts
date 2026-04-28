@@ -37,8 +37,8 @@ describe('src/commands/delete', () => {
             branch: 'feature/x',
             created_at: '2026-04-28T00:00:00.000Z',
             paths: [
-              { repo: 'repo-a', path: '/tmp/repo-a-ticket-1234' },
-              { repo: 'repo-b', path: '/tmp/repo-b-ticket-1234' },
+              { repo: 'repo-a', path: '/tmp/repo-a/.git/worktrees/ticket-1234/repo-a' },
+              { repo: 'repo-b', path: '/tmp/repo-b/.git/worktrees/ticket-1234/repo-b' },
             ],
           })),
     );
@@ -144,18 +144,26 @@ describe('src/commands/delete', () => {
 
     expect(mocks.runDestructiveFlow).toHaveBeenCalledWith({
       paths: [
-        { repo: 'repo-a', path: '/tmp/repo-a-ticket-1234' },
-        { repo: 'repo-b', path: '/tmp/repo-b-ticket-1234' },
+        { repo: 'repo-a', path: '/tmp/repo-a/.git/worktrees/ticket-1234/repo-a' },
+        { repo: 'repo-b', path: '/tmp/repo-b/.git/worktrees/ticket-1234/repo-b' },
       ],
       operations: [
-        { type: 'REMOVE', path: '/tmp/repo-a-ticket-1234' },
-        { type: 'REMOVE', path: '/tmp/repo-b-ticket-1234' },
+        { type: 'REMOVE', path: '/tmp/repo-a/.git/worktrees/ticket-1234/repo-a' },
+        { type: 'REMOVE', path: '/tmp/repo-b/.git/worktrees/ticket-1234/repo-b' },
         { type: 'DELETE', path: '/tmp/config/workspaces/ticket-1234.yaml' },
       ],
       force: true,
     });
-    expect(mocks.removeWorktree).toHaveBeenNthCalledWith(1, '/tmp/origins/repo-a', '/tmp/repo-a-ticket-1234');
-    expect(mocks.removeWorktree).toHaveBeenNthCalledWith(2, '/tmp/origins/repo-b', '/tmp/repo-b-ticket-1234');
+    expect(mocks.removeWorktree).toHaveBeenNthCalledWith(
+      1,
+      '/tmp/origins/repo-a',
+      '/tmp/repo-a/.git/worktrees/ticket-1234/repo-a',
+    );
+    expect(mocks.removeWorktree).toHaveBeenNthCalledWith(
+      2,
+      '/tmp/origins/repo-b',
+      '/tmp/repo-b/.git/worktrees/ticket-1234/repo-b',
+    );
     expect(mocks.deleteWorkspace).toHaveBeenCalledWith('ticket-1234');
     expect(mocks.exitWithCode).toHaveBeenCalledWith(0);
   });
@@ -188,7 +196,9 @@ describe('src/commands/delete', () => {
 
     expect(mocks.removeWorktree).toHaveBeenCalledTimes(2);
     expect(mocks.deleteWorkspace).toHaveBeenCalledWith('ticket-1234');
-    expect(mocks.printError).toHaveBeenCalledWith('Failed to remove worktree at /tmp/repo-a-ticket-1234: boom');
+    expect(mocks.printError).toHaveBeenCalledWith(
+      'Failed to remove worktree at /tmp/repo-a/.git/worktrees/ticket-1234/repo-a: boom',
+    );
     expect(mocks.exitWithCode).toHaveBeenCalledWith(2);
   });
 });

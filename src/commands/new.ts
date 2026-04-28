@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { join } from 'node:path';
 
 import { getActiveConfig } from '../core/config.js';
-import { createWorktree, scanOrigins } from '../core/git.js';
+import { createWorktree, findOriginRepo, scanOrigins } from '../core/git.js';
 import {
   buildWorktreePath,
   listWorkspaces,
@@ -25,13 +25,27 @@ import {
   promptWorkspaceName,
 } from '../ui/prompts.js';
 
+/**
+ * Commander collector used for repeatable `--repo` flags.
+ *
+ * @param value - Newly provided repository value.
+ * @param previous - Previously collected values.
+ * @returns Updated array including the new value.
+ */
 function collect(value: string, previous: string[]): string[] {
   return [...previous, value];
 }
 
+/**
+ * Resolves repository names passed on the command line against discovered origins.
+ *
+ * @param repositories - Available repositories discovered in origins.
+ * @param names - Repository names requested by the user.
+ * @returns Matching repositories in the same order as the requested names.
+ */
 function findSelectedRepositories(repositories: OriginRepo[], names: string[]): OriginRepo[] {
   return names.map((name) => {
-    const repository = repositories.find((candidate) => candidate.name === name);
+    const repository = findOriginRepo(repositories, name);
 
     if (!repository) {
       printError(`Repository not found in origins: ${name}`);
@@ -42,6 +56,9 @@ function findSelectedRepositories(repositories: OriginRepo[], names: string[]): 
   });
 }
 
+/**
+ * Implements the `wh new` command.
+ */
 export const newCommand = new Command('new')
   .description('Create a new workspace')
   .argument('[name]', 'workspace name')
@@ -63,6 +80,11 @@ export const newCommand = new Command('new')
 
     if (existingWorkspaceNames.includes(workspaceName)) {
       printError(`Workspace already exists: ${workspaceName}`);
+      exitWithCode(ExitCode.ToolError);
+    }
+
+    if (repositories.length === 0) {
+      printError(`No repositories found in origins: ${config.origins}`);
       exitWithCode(ExitCode.ToolError);
     }
 

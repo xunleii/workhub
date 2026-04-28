@@ -2,6 +2,7 @@
 import { createRequire } from 'module';
 import { Command } from 'commander';
 
+import { completionCommand } from './commands/completion.js';
 import { deleteCommand } from './commands/delete.js';
 import { editCommand } from './commands/edit.js';
 import { newCommand } from './commands/new.js';
@@ -22,6 +23,12 @@ import { exitWithCode, printError } from './ui/output.js';
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json') as { version: string };
 
+/**
+ * Extracts setup-related global overrides from the raw CLI arguments before Commander parses them.
+ *
+ * @param argv - Raw Node.js argument vector.
+ * @returns Origins/editor overrides explicitly provided on the command line.
+ */
 function readSetupOverrides(argv: string[]): { origins?: string; editor?: string } {
   const overrides: { origins?: string; editor?: string } = {};
 
@@ -53,6 +60,12 @@ function readSetupOverrides(argv: string[]): { origins?: string; editor?: string
   return overrides;
 }
 
+/**
+ * Applies setup-related CLI overrides on top of the loaded configuration.
+ *
+ * @param config - Mutable runtime configuration.
+ * @param overrides - Overrides extracted from raw CLI arguments.
+ */
 function applyFlagOverrides(config: AppConfig, overrides: { origins?: string; editor?: string }): void {
   if (overrides.origins) {
     config.origins = overrides.origins;
@@ -77,6 +90,7 @@ program.addCommand(newCommand);
 program.addCommand(openCommand);
 program.addCommand(editCommand);
 program.addCommand(deleteCommand);
+program.addCommand(completionCommand);
 
 await validateGitVersion();
 

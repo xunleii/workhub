@@ -7,6 +7,14 @@ import yaml from 'js-yaml';
 import { ExitCode, type AppConfig } from '../types.js';
 import { exitWithCode, printError } from '../ui/output.js';
 
+/**
+ * Resolves the absolute path of the user configuration file.
+ *
+ * The config lives in XDG config storage when available and falls back to the
+ * conventional `~/.config/workhub/config.yaml` location otherwise.
+ *
+ * @returns Absolute filesystem path to `config.yaml`.
+ */
 export function resolveConfigPath(): string {
   const xdgConfigHome = process.env.XDG_CONFIG_HOME;
   const baseDirectory = xdgConfigHome ?? join(homedir(), '.config');
@@ -14,6 +22,11 @@ export function resolveConfigPath(): string {
   return join(baseDirectory, 'workhub', 'config.yaml');
 }
 
+/**
+ * Checks whether the persisted user configuration already exists.
+ *
+ * @returns `true` when the config file is present on disk.
+ */
 export async function configExists(): Promise<boolean> {
   try {
     await access(resolveConfigPath());
@@ -23,6 +36,11 @@ export async function configExists(): Promise<boolean> {
   }
 }
 
+/**
+ * Persists the application configuration to disk.
+ *
+ * @param config - Configuration values to serialize as YAML.
+ */
 export async function saveConfig(config: AppConfig): Promise<void> {
   const configPath = resolveConfigPath();
 
@@ -30,6 +48,12 @@ export async function saveConfig(config: AppConfig): Promise<void> {
   await writeFile(configPath, yaml.dump(config), 'utf8');
 }
 
+/**
+ * Loads the application configuration from disk and normalizes default values.
+ *
+ * @returns Parsed configuration ready to be validated.
+ * @throws {Error} When the configuration file is missing.
+ */
 export async function loadConfig(): Promise<AppConfig> {
   const configPath = resolveConfigPath();
   let rawConfig: string;
@@ -48,6 +72,11 @@ export async function loadConfig(): Promise<AppConfig> {
   };
 }
 
+/**
+ * Validates runtime configuration before commands are allowed to execute.
+ *
+ * @param config - Configuration object to validate.
+ */
 export async function validateConfig(config: AppConfig): Promise<void> {
   try {
     await access(config.origins);
@@ -59,10 +88,21 @@ export async function validateConfig(config: AppConfig): Promise<void> {
 
 let activeConfig: AppConfig | null = null;
 
+/**
+ * Stores the validated configuration in module state for later command access.
+ *
+ * @param config - Runtime configuration to expose to command handlers.
+ */
 export function setActiveConfig(config: AppConfig): void {
   activeConfig = config;
 }
 
+/**
+ * Returns the validated configuration currently active for the process.
+ *
+ * @returns Active runtime configuration.
+ * @throws {Error} When configuration has not been initialized yet.
+ */
 export function getActiveConfig(): AppConfig {
   if (!activeConfig) {
     throw new Error('Config not loaded. Call setActiveConfig first.');

@@ -1,6 +1,6 @@
 import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 
 import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -15,8 +15,8 @@ describe('src/core/workspace', () => {
     branch: 'feature/new-api',
     created_at: '2026-04-27T10:00:00.000Z',
     paths: [
-      { repo: 'repo-a', path: '/tmp/repos/repo-a/.git/worktrees/feature-new-api' },
-      { repo: 'repo-b', path: '/tmp/repos/repo-b/.git/worktrees/feature-new-api' },
+      { repo: 'repo-a', path: '/tmp/repos/repo-a/.git/worktrees/ticket-1234/repo-a' },
+      { repo: 'repo-b', path: '/tmp/repos/repo-b/.git/worktrees/ticket-1234/repo-b' },
     ],
   };
 
@@ -91,14 +91,14 @@ describe('src/core/workspace', () => {
     await saveWorkspace(baseWorkspaceConfig);
     await addPath('ticket-1234', {
       repo: 'repo-c',
-      path: '/tmp/repos/repo-c/.git/worktrees/feature-new-api',
+      path: '/tmp/repos/repo-c/.git/worktrees/ticket-1234/repo-c',
     });
 
     await expect(loadWorkspace('ticket-1234')).resolves.toEqual({
       ...baseWorkspaceConfig,
       paths: [
         ...baseWorkspaceConfig.paths,
-        { repo: 'repo-c', path: '/tmp/repos/repo-c/.git/worktrees/feature-new-api' },
+        { repo: 'repo-c', path: '/tmp/repos/repo-c/.git/worktrees/ticket-1234/repo-c' },
       ],
     });
   });
@@ -108,10 +108,10 @@ describe('src/core/workspace', () => {
 
     await saveWorkspace(baseWorkspaceConfig);
 
-    await expect(removePath('ticket-1234', 'repo-b')).resolves.toBe('/tmp/repos/repo-b/.git/worktrees/feature-new-api');
+    await expect(removePath('ticket-1234', 'repo-b')).resolves.toBe('/tmp/repos/repo-b/.git/worktrees/ticket-1234/repo-b');
     await expect(loadWorkspace('ticket-1234')).resolves.toEqual({
       ...baseWorkspaceConfig,
-      paths: [{ repo: 'repo-a', path: '/tmp/repos/repo-a/.git/worktrees/feature-new-api' }],
+      paths: [{ repo: 'repo-a', path: '/tmp/repos/repo-a/.git/worktrees/ticket-1234/repo-a' }],
     });
   });
 
@@ -124,7 +124,7 @@ describe('src/core/workspace', () => {
   });
 
   it('removePath does not delete the worktree directory from disk', async () => {
-    const worktreeDirectory = join(testDirectory, 'repo-b-ticket-1234');
+    const worktreeDirectory = join(testDirectory, 'repo-b', '.git', 'worktrees', 'ticket-1234', 'repo-b');
     const { removePath, saveWorkspace } = await import('../../../src/core/workspace.js');
 
     await mkdir(worktreeDirectory, { recursive: true });
@@ -184,12 +184,21 @@ describe('src/core/workspace', () => {
     expect(spawn).toHaveBeenCalledWith(
       'zed',
       [
-        '/tmp/repos/repo-a/.git/worktrees/feature-new-api',
-        '/tmp/repos/repo-b/.git/worktrees/feature-new-api',
+        '/tmp/repos/repo-a/.git/worktrees/ticket-1234/repo-a',
+        '/tmp/repos/repo-b/.git/worktrees/ticket-1234/repo-b',
       ],
       expect.objectContaining({ detached: true, stdio: 'ignore' }),
     );
     expect(unref).toHaveBeenCalledTimes(1);
+  });
+
+  it('buildWorktreePath stores worktrees under repo .git/worktrees/<workspace>/<repo>', async () => {
+    const { buildWorktreePath } = await import('../../../src/core/workspace.js');
+    const repoPath = '/tmp/repos/group-a/repo-a';
+
+    expect(buildWorktreePath(repoPath, 'ticket-1234')).toBe(
+      join(repoPath, '.git', 'worktrees', 'ticket-1234', basename(repoPath)),
+    );
   });
 
   it('validateEditorBinary exits with ToolError for an unknown binary', async () => {

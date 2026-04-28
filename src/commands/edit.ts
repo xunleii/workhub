@@ -1,12 +1,15 @@
 import { Command } from 'commander';
 
 import { getActiveConfig } from '../core/config.js';
-import { createWorktree, scanOrigins } from '../core/git.js';
+import { createWorktree, findOriginRepo, scanOrigins } from '../core/git.js';
 import { addPath, buildWorktreePath, loadWorkspace, removePath } from '../core/workspace.js';
 import { ExitCode } from '../types.js';
 import { exitWithCode, isTTY, printError, printSuccess } from '../ui/output.js';
 import { promptBranchName } from '../ui/prompts.js';
 
+/**
+ * Implements the `wh edit` command for additive and non-destructive workspace changes.
+ */
 export const editCommand = new Command('edit')
   .description('Edit an existing workspace')
   .argument('<name>', 'workspace name')
@@ -39,12 +42,19 @@ export const editCommand = new Command('edit')
       printError(`workspace not found: ${workspaceName}`);
       exitWithCode(ExitCode.ToolError);
     });
+    const requestedRepository = options.add;
+
+    if (!requestedRepository) {
+      printError('use --add <repo> or --remove <repo>');
+      exitWithCode(ExitCode.ToolError);
+    }
+
     const config = getActiveConfig();
     const repositories = await scanOrigins(config.origins);
-    const repository = repositories.find((candidate) => candidate.name === options.add);
+    const repository = findOriginRepo(repositories, requestedRepository);
 
     if (!repository) {
-      printError(`repository not found in origins: ${options.add}`);
+      printError(`repository not found in origins: ${requestedRepository}`);
       exitWithCode(ExitCode.ToolError);
     }
 

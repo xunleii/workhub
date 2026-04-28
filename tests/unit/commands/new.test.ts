@@ -12,7 +12,9 @@ afterEach(() => {
 
 describe('src/commands/new', () => {
   async function loadNewCommand(options?: {
+    isTTY?: boolean;
     listWorkspacesResult?: string[];
+    scanOriginsResult?: Array<{ name: string; path: string }>;
     createWorktreeImplementation?: (repoPath: string, branch: string, worktreePath: string) => Promise<void>;
   }) {
     const printError = vi.fn();
@@ -30,13 +32,13 @@ describe('src/commands/new', () => {
     const openWorkspace = vi.fn();
     const validateEditorBinary = vi.fn();
     const listWorkspaces = vi.fn(async () => options?.listWorkspacesResult ?? []);
-    const scanOrigins = vi.fn(async () => [
+    const scanOrigins = vi.fn(async () => options?.scanOriginsResult ?? [
       { name: 'repo-a', path: '/tmp/origins/repo-a' },
       { name: 'repo-b', path: '/tmp/origins/repo-b' },
     ]);
 
     vi.doMock('../../../src/ui/output.js', () => ({
-      isTTY: false,
+      isTTY: options?.isTTY ?? false,
       printError,
       printPreview,
       exitWithCode,
@@ -56,12 +58,15 @@ describe('src/commands/new', () => {
     }));
 
     vi.doMock('../../../src/core/git.js', () => ({
-      scanOrigins,
       createWorktree,
+      findOriginRepo: vi.fn((repositories: Array<{ name: string; path: string }>, name: string) =>
+        repositories.find((repository) => repository.name === name || repository.name.split('/').at(-1) === name) ?? null),
+      scanOrigins,
     }));
 
     vi.doMock('../../../src/core/workspace.js', () => ({
-      buildWorktreePath: vi.fn((repoPath: string, workspaceName: string) => `${repoPath}-${workspaceName}`),
+      buildWorktreePath: vi.fn((repoPath: string, workspaceName: string) =>
+        `${repoPath}/.git/worktrees/${workspaceName}/${repoPath.split('/').at(-1)}`),
       listWorkspaces,
       saveWorkspace,
       resolveWorkspacesDir: vi.fn(() => '/tmp/config/workspaces'),
@@ -106,13 +111,13 @@ describe('src/commands/new', () => {
       1,
       '/tmp/origins/repo-a',
       'feature/x',
-      '/tmp/origins/repo-a-ticket-1234',
+      '/tmp/origins/repo-a/.git/worktrees/ticket-1234/repo-a',
     );
     expect(mocks.createWorktree).toHaveBeenNthCalledWith(
       2,
       '/tmp/origins/repo-b',
       'feature/x',
-      '/tmp/origins/repo-b-ticket-1234',
+      '/tmp/origins/repo-b/.git/worktrees/ticket-1234/repo-b',
     );
     expect(mocks.printPreview).toHaveBeenCalledTimes(1);
     expect(mocks.saveWorkspace).toHaveBeenCalledTimes(1);
@@ -155,5 +160,21 @@ describe('src/commands/new', () => {
     );
     expect(mocks.saveWorkspace).not.toHaveBeenCalled();
     expect(mocks.openWorkspace).not.toHaveBeenCalled();
+  });
+
+  it('empty origins fail with a user-facing error before opening the repository prompt', async () => {
+    const { newCommand, mocks } = await loadNewCommand({
+      isTTY: true,
+      scanOriginsResult: [],
+    });
+
+    await expect(
+      newCommand.parseAsync(['node', 'new', 'ticket-1234'], { from: 'node' }),
+    ).rejects.toThrow('exit:2');
+
+    expect(mocks.printError).toHaveBeenCalledWith('No repositories found in origins: /tmp/origins');
+    expect(mocks.promptRepoSelection).not.toHaveBeenCalled();
+    expect(mocks.promptBranchName).not.toHaveBeenCalled();
+    expect(mocks.saveWorkspace).not.toHaveBeenCalled();
   });
 });

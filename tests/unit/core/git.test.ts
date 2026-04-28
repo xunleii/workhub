@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
 import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -10,6 +10,7 @@ import {
   checkDirty,
   checkUnpushed,
   createWorktree,
+  findOriginRepo,
   getWorkspaceStatus,
   runSafetyChecks,
   scanOrigins,
@@ -23,6 +24,7 @@ describe('scanOrigins', () => {
 
     await mkdir(join(originsDirectory, 'repo-b', '.git'), { recursive: true });
     await mkdir(join(originsDirectory, 'repo-a', '.git'), { recursive: true });
+    await mkdir(join(originsDirectory, 'gitlab.dnm.radiofrance.fr', 'struktur', 'gitops', '.git'), { recursive: true });
     await mkdir(join(originsDirectory, 'not-a-repo'), { recursive: true });
     await mkdir(join(originsDirectory, 'worktree-repo'), { recursive: true });
     await writeFile(join(originsDirectory, 'worktree-repo', '.git'), 'gitdir: /tmp/worktree', 'utf8');
@@ -34,6 +36,10 @@ describe('scanOrigins', () => {
 
   it('returns repos from a real tmpdir sorted by name', async () => {
     await expect(scanOrigins(originsDirectory)).resolves.toEqual([
+      {
+        name: 'gitlab.dnm.radiofrance.fr/struktur/gitops',
+        path: join(originsDirectory, 'gitlab.dnm.radiofrance.fr', 'struktur', 'gitops'),
+      },
       { name: 'repo-a', path: join(originsDirectory, 'repo-a') },
       { name: 'repo-b', path: join(originsDirectory, 'repo-b') },
       { name: 'worktree-repo', path: join(originsDirectory, 'worktree-repo') },
@@ -60,6 +66,22 @@ describe('scanOrigins', () => {
     } finally {
       await rm(emptyOriginsDirectory, { recursive: true, force: true });
     }
+  });
+
+  it('findOriginRepo resolves a unique basename from nested repositories', async () => {
+    const repositories = await scanOrigins(originsDirectory);
+
+    expect(findOriginRepo(repositories, 'gitops')).toEqual({
+      name: 'gitlab.dnm.radiofrance.fr/struktur/gitops',
+      path: join(originsDirectory, 'gitlab.dnm.radiofrance.fr', 'struktur', 'gitops'),
+    });
+  });
+
+  it('findOriginRepo throws when a basename is ambiguous', () => {
+    expect(() => findOriginRepo([
+      { name: 'group-a/gitops', path: '/tmp/group-a/gitops' },
+      { name: 'group-b/gitops', path: '/tmp/group-b/gitops' },
+    ], 'gitops')).toThrow('repository name is ambiguous in origins: gitops');
   });
 });
 
@@ -88,7 +110,13 @@ describe('git worktree helpers', () => {
   });
 
   it('createWorktree creates a worktree on disk for a new branch', async () => {
-    const worktreeDirectory = join(tmpdir(), `workhub-worktree-${Date.now()}-new`);
+    const worktreeDirectory = join(
+      repositoryDirectory,
+      '.git',
+      'worktrees',
+      'ticket-1234',
+      basename(repositoryDirectory),
+    );
 
     try {
       await createWorktree(repositoryDirectory, 'feature/new-worktree', worktreeDirectory);
