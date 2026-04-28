@@ -16,6 +16,11 @@ export interface SafetyCheckResult {
   unpushed: boolean;
 }
 
+export interface OriginRepo {
+  name: string;
+  path: string;
+}
+
 export enum ExitCode {
   Success = 0,
   UserAbort = 1,

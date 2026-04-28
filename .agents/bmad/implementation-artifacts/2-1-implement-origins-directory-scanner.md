@@ -1,6 +1,6 @@
 # Story 2.1: Implement Origins Directory Scanner
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -17,22 +17,22 @@ so that I can select repositories by name rather than typing full paths.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `scanOrigins(originsPath: string)` in `src/core/git.ts` (AC: #1, #2, #3)
-  - [ ] Read directory entries at depth 1 using `fs/promises.readdir` with `{ withFileTypes: true }`
-  - [ ] Filter to directories only
-  - [ ] For each directory, check if `.git` subdirectory or file exists (makes it a git repo)
-  - [ ] Run all `.git` checks concurrently with `Promise.all` (performance: AC #1 < 3s)
-  - [ ] Return `Array<{ name: string; path: string }>` sorted by name
-  - [ ] Throw `Error(`Origins directory not found: ${originsPath}`)` if path does not exist
+- [x] Task 1: Implement `scanOrigins(originsPath: string)` in `src/core/git.ts` (AC: #1, #2, #3)
+  - [x] Read directory entries at depth 1 using `fs/promises.readdir` with `{ withFileTypes: true }`
+  - [x] Filter to directories only
+  - [x] For each directory, check if `.git` subdirectory or file exists (makes it a git repo)
+  - [x] Run all `.git` checks concurrently with `Promise.all` (performance: AC #1 < 3s)
+  - [x] Return `Array<{ name: string; path: string }>` sorted by name
+  - [x] Throw `Error(`Origins directory not found: ${originsPath}`)` if path does not exist
 
-- [ ] Task 2: Add `OriginRepo` type to `src/types.ts`
-  - [ ] `export interface OriginRepo { name: string; path: string; }`
+- [x] Task 2: Add `OriginRepo` type to `src/types.ts`
+  - [x] `export interface OriginRepo { name: string; path: string; }`
 
-- [ ] Task 3: Write unit tests in `tests/unit/core/git.test.ts` (AC: #1, #2, #3, #4)
-  - [ ] Test: returns repos from a real tmpdir with `.git` subdirectories
-  - [ ] Test: excludes non-git directories
-  - [ ] Test: throws on non-existent origins path
-  - [ ] Test: returns empty array for empty origins directory
+- [x] Task 3: Write unit tests in `tests/unit/core/git.test.ts` (AC: #1, #2, #3, #4)
+  - [x] Test: returns repos from a real tmpdir with `.git` subdirectories
+  - [x] Test: excludes non-git directories
+  - [x] Test: throws on non-existent origins path
+  - [x] Test: returns empty array for empty origins directory
 
 ## Dev Notes
 
@@ -164,6 +164,23 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Red phase: `npm test -- --run tests/unit/core/git.test.ts` failed before implementation because `scanOrigins` was not exported from `src/core/git.ts`.
+- Validation commands: `npm test -- --run tests/unit/core/git.test.ts`, `npm run build`, `npm test`.
+
 ### Completion Notes List
 
+- Implemented `scanOrigins()` in `src/core/git.ts` using `readdir`, `access`, and concurrent `.git` checks with `Promise.all`.
+- Added the shared `OriginRepo` type to `src/types.ts` so future command and workspace flows can reuse the scanner result shape.
+- Added unit tests covering sorted repo discovery, non-git exclusion, missing origins errors, and empty-directory behavior without invoking any git binary.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/2-1-implement-origins-directory-scanner.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/core/git.ts
+- src/types.ts
+- tests/unit/core/git.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented the origins directory scanner, added the shared repository type, and validated the filesystem-only scan behavior with unit tests.

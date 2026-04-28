@@ -52,7 +52,7 @@ development_status:
 
   # Epic 2: Create Workspace
   epic-2: in-progress
-  2-1-implement-origins-directory-scanner: ready-for-dev
+  2-1-implement-origins-directory-scanner: review
   2-2-implement-workspace-persistence-layer: ready-for-dev
   2-3-implement-git-worktree-creation: ready-for-dev
   2-4-implement-wh-new-interactive-workspace-creation: ready-for-dev
