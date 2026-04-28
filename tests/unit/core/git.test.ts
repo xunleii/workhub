@@ -5,7 +5,15 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { branchExists, createWorktree, getWorkspaceStatus, scanOrigins } from '../../../src/core/git.js';
+import {
+  branchExists,
+  checkDirty,
+  checkUnpushed,
+  createWorktree,
+  getWorkspaceStatus,
+  runSafetyChecks,
+  scanOrigins,
+} from '../../../src/core/git.js';
 
 describe('scanOrigins', () => {
   let originsDirectory: string;
@@ -192,6 +200,85 @@ describe('workspace status helpers', () => {
         dirty: false,
         unpushed: false,
       },
+    ]);
+  });
+});
+
+describe('git safety helpers', () => {
+  let repositoryDirectory: string;
+  let remoteDirectory: string | undefined;
+  let currentBranch: string;
+
+  beforeEach(async () => {
+    repositoryDirectory = await mkdtemp(join(tmpdir(), 'workhub-safety-repo-'));
+
+    execSync('git init', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git config user.email "test@test.com"', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git config user.name "Test User"', { cwd: repositoryDirectory, stdio: 'ignore' });
+    await writeFile(join(repositoryDirectory, 'README.md'), 'init\n', 'utf8');
+    execSync('git add README.md', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git -c commit.gpgsign=false commit -m "init"', { cwd: repositoryDirectory, stdio: 'ignore' });
+    currentBranch = execSync('git rev-parse --abbrev-ref HEAD', {
+      cwd: repositoryDirectory,
+      encoding: 'utf8',
+    }).trim();
+  });
+
+  afterEach(async () => {
+    await rm(repositoryDirectory, { recursive: true, force: true });
+
+    if (remoteDirectory) {
+      await rm(remoteDirectory, { recursive: true, force: true });
+      remoteDirectory = undefined;
+    }
+  });
+
+  it('checkDirty returns false for a clean repository', async () => {
+    await expect(checkDirty(repositoryDirectory)).resolves.toBe(false);
+  });
+
+  it('checkDirty returns true when the repository has local changes', async () => {
+    await writeFile(join(repositoryDirectory, 'README.md'), 'dirty\n', 'utf8');
+
+    await expect(checkDirty(repositoryDirectory)).resolves.toBe(true);
+  });
+
+  it('checkUnpushed returns false when no upstream is configured', async () => {
+    await expect(checkUnpushed(repositoryDirectory)).resolves.toBe(false);
+  });
+
+  it('checkUnpushed returns true when commits are ahead of upstream', async () => {
+    remoteDirectory = await mkdtemp(join(tmpdir(), 'workhub-safety-remote-'));
+
+    execSync('git init --bare', { cwd: remoteDirectory, stdio: 'ignore' });
+    execSync(`git remote add origin ${remoteDirectory}`, { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync(`git push -u origin ${currentBranch}`, { cwd: repositoryDirectory, stdio: 'ignore' });
+    await writeFile(join(repositoryDirectory, 'ahead.txt'), 'ahead\n', 'utf8');
+    execSync('git add ahead.txt', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git -c commit.gpgsign=false commit -m "ahead"', { cwd: repositoryDirectory, stdio: 'ignore' });
+
+    await expect(checkUnpushed(repositoryDirectory)).resolves.toBe(true);
+  });
+
+  it('stale paths return false for both safety checks', async () => {
+    const stalePath = join(repositoryDirectory, 'missing-worktree');
+
+    await expect(checkDirty(stalePath)).resolves.toBe(false);
+    await expect(checkUnpushed(stalePath)).resolves.toBe(false);
+  });
+
+  it('runSafetyChecks returns results for each path', async () => {
+    const stalePath = join(repositoryDirectory, 'missing-worktree');
+    await writeFile(join(repositoryDirectory, 'README.md'), 'dirty\n', 'utf8');
+
+    await expect(
+      runSafetyChecks([
+        { path: repositoryDirectory },
+        { path: stalePath },
+      ]),
+    ).resolves.toEqual([
+      { path: repositoryDirectory, dirty: true, unpushed: false },
+      { path: stalePath, dirty: false, unpushed: false },
     ]);
   });
 });

@@ -1,6 +1,6 @@
 # Story 5.1: Implement Git Safety Checks
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -19,24 +19,24 @@ so that I never accidentally destroy work that hasn't been saved or shared.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `checkDirty(path: string): Promise<boolean>` in `src/core/git.ts` (AC: #1, #2, #5)
-  - [ ] Return `false` if path does not exist (`access()` throws)
-  - [ ] Use `simpleGit(path).status()` and return `!status.isClean()`
+- [x] Task 1: Implement `checkDirty(path: string): Promise<boolean>` in `src/core/git.ts` (AC: #1, #2, #5)
+  - [x] Return `false` if path does not exist (`access()` throws)
+  - [x] Use `simpleGit(path).status()` and return `!status.isClean()`
 
-- [ ] Task 2: Implement `checkUnpushed(path: string): Promise<boolean>` in `src/core/git.ts` (AC: #3, #4, #5)
-  - [ ] Return `false` if path does not exist
-  - [ ] Get upstream: `git.revparse(['--abbrev-ref', '--symbolic-full-name', '@{u}'])` — if it throws (no upstream), return `false`
-  - [ ] Count commits ahead: `git.log({ from: '@{u}', to: 'HEAD' })` — return `log.total > 0`
+- [x] Task 2: Implement `checkUnpushed(path: string): Promise<boolean>` in `src/core/git.ts` (AC: #3, #4, #5)
+  - [x] Return `false` if path does not exist
+  - [x] Get upstream: `git.revparse(['--abbrev-ref', '--symbolic-full-name', '@{u}'])` — if it throws (no upstream), return `false`
+  - [x] Count commits ahead: `git.log({ from: '@{u}', to: 'HEAD' })` — return `log.total > 0`
 
-- [ ] Task 3: Implement `runSafetyChecks(entries: Array<{ path: string }>): Promise<SafetyCheckResult[]>` in `src/core/git.ts` (AC: #6)
-  - [ ] Run `checkDirty` and `checkUnpushed` concurrently per path with `Promise.all`
-  - [ ] Return `SafetyCheckResult[]` (type already in `types.ts` from Story 1.1)
+- [x] Task 3: Implement `runSafetyChecks(entries: Array<{ path: string }>): Promise<SafetyCheckResult[]>` in `src/core/git.ts` (AC: #6)
+  - [x] Run `checkDirty` and `checkUnpushed` concurrently per path with `Promise.all`
+  - [x] Return `SafetyCheckResult[]` (type already in `types.ts` from Story 1.1)
 
-- [ ] Task 4: Write unit tests in `tests/unit/core/git.test.ts` (AC: #1–#6)
-  - [ ] Test: `checkDirty` returns true for repo with staged/unstaged changes
-  - [ ] Test: `checkDirty` returns false for clean repo
-  - [ ] Test: `checkUnpushed` returns false when no upstream configured
-  - [ ] Test: stale path (non-existent dir) returns false for both checks
+- [x] Task 4: Write unit tests in `tests/unit/core/git.test.ts` (AC: #1–#6)
+  - [x] Test: `checkDirty` returns true for repo with staged/unstaged changes
+  - [x] Test: `checkDirty` returns false for clean repo
+  - [x] Test: `checkUnpushed` returns false when no upstream configured
+  - [x] Test: stale path (non-existent dir) returns false for both checks
 
 ## Dev Notes
 
@@ -165,6 +165,21 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Validation commands: `npm test -- --run tests/unit/core/git.test.ts tests/unit/ui/output.test.ts`, `npm run build`, `npm test`.
+
 ### Completion Notes List
 
+- Hardened `checkDirty()` and `checkUnpushed()` so stale paths and repositories without upstreams are treated as safe instead of throwing.
+- Added `runSafetyChecks()` and updated workspace status inspection to reuse the extracted Git safety helpers.
+- Added real-repository tests for clean, dirty, stale, no-upstream, ahead-of-upstream, and multi-path safety-check behavior.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/5-1-implement-git-safety-checks.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/core/git.ts
+- tests/unit/core/git.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented reusable Git safety checks for dirty and unpushed worktrees ahead of destructive flows.

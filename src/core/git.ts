@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { simpleGit } from 'simple-git';
 
-import type { OriginRepo, WorkspacePathStatus } from '../types.js';
+import type { OriginRepo, SafetyCheckResult, WorkspacePathStatus } from '../types.js';
 import { ExitCode } from '../types.js';
 import { exitWithCode, printError } from '../ui/output.js';
 
@@ -86,13 +86,50 @@ export async function createWorktree(
 }
 
 export async function checkDirty(repoPath: string): Promise<boolean> {
+  try {
+    await access(repoPath);
+  } catch {
+    return false;
+  }
+
   const status = await simpleGit(repoPath).status();
   return !status.isClean();
 }
 
 export async function checkUnpushed(repoPath: string): Promise<boolean> {
-  const status = await simpleGit(repoPath).status();
-  return status.ahead > 0;
+  try {
+    await access(repoPath);
+  } catch {
+    return false;
+  }
+
+  const git = simpleGit(repoPath);
+
+  try {
+    await git.revparse(['--abbrev-ref', '--symbolic-full-name', '@{u}']);
+  } catch {
+    return false;
+  }
+
+  const log = await git.log({ from: '@{u}', to: 'HEAD' });
+  return log.total > 0;
+}
+
+export async function runSafetyChecks(entries: Array<{ path: string }>): Promise<SafetyCheckResult[]> {
+  return Promise.all(
+    entries.map(async (entry) => {
+      const [dirty, unpushed] = await Promise.all([
+        checkDirty(entry.path),
+        checkUnpushed(entry.path),
+      ]);
+
+      return {
+        path: entry.path,
+        dirty,
+        unpushed,
+      };
+    }),
+  );
 }
 
 export async function getWorkspaceStatus(
@@ -113,15 +150,19 @@ export async function getWorkspaceStatus(
       }
 
       const git = simpleGit(path);
-      const status = await git.status();
+      const [status, dirty, unpushed] = await Promise.all([
+        git.status(),
+        checkDirty(path),
+        checkUnpushed(path),
+      ]);
 
       return {
         repo,
         path,
         exists: true,
         branch: status.current || undefined,
-        dirty: !status.isClean(),
-        unpushed: status.ahead > 0,
+        dirty,
+        unpushed,
       };
     }),
   );
