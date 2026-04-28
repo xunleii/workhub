@@ -86,4 +86,61 @@ describe('src/ui/output', () => {
     expect(writeSpy).toHaveBeenNthCalledWith(5, 'Aborting. Commit or push before retrying.\n');
     writeSpy.mockRestore();
   });
+
+  it('printWorkspaceStatus renders TTY output with status indicators', async () => {
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const originalTTY = process.stdout.isTTY;
+
+    Object.defineProperty(process.stdout, 'isTTY', { configurable: true, value: true });
+    delete process.env.NO_COLOR;
+    vi.resetModules();
+
+    const { printWorkspaceStatus } = await import('../../../src/ui/output.js');
+
+    printWorkspaceStatus([
+      { repo: 'repo-a', path: '/tmp/worktree-a', exists: true, branch: 'feature/x', dirty: true, unpushed: false },
+      { repo: 'repo-b', path: '/tmp/worktree-b', exists: false, dirty: false, unpushed: false },
+    ]);
+
+    const output = writeSpy.mock.calls.map(([chunk]) => chunk).join('');
+
+    expect(output).toContain('Repository  Branch      State             Path\n');
+    expect(output).toContain('repo-a');
+    expect(output).toContain('feature/x');
+    expect(output).toContain('dirty');
+    expect(output).toContain('repo-b');
+    expect(output).toContain('stale');
+
+    Object.defineProperty(process.stdout, 'isTTY', { configurable: true, value: originalTTY });
+    writeSpy.mockRestore();
+    vi.resetModules();
+  });
+
+  it('printWorkspaceStatus renders non-TTY output as tab-separated lines', async () => {
+    const writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
+    const originalTTY = process.stdout.isTTY;
+
+    Object.defineProperty(process.stdout, 'isTTY', { configurable: true, value: false });
+    delete process.env.NO_COLOR;
+    vi.resetModules();
+
+    const { printWorkspaceStatus } = await import('../../../src/ui/output.js');
+
+    printWorkspaceStatus([
+      {
+        repo: 'repo-a',
+        path: '/tmp/worktree-a',
+        exists: true,
+        branch: 'feature/x',
+        dirty: false,
+        unpushed: true,
+      },
+    ]);
+
+    expect(writeSpy).toHaveBeenCalledWith('repo-a\t/tmp/worktree-a\texists\tfeature/x\tclean\tunpushed\n');
+
+    Object.defineProperty(process.stdout, 'isTTY', { configurable: true, value: originalTTY });
+    writeSpy.mockRestore();
+    vi.resetModules();
+  });
 });

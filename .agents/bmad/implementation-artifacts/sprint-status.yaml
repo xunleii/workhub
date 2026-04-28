@@ -63,7 +63,7 @@ development_status:
   epic-3: in-progress
   3-1-implement-workspace-listing-and-stale-path-detection: review
   3-2-implement-wh-open-reopen-workspace-in-editor: review
-  3-3-implement-workspace-state-display: ready-for-dev
+  3-3-implement-workspace-state-display: review
   epic-3-retrospective: optional
 
   # Epic 4: Edit Workspace

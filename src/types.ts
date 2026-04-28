@@ -26,6 +26,15 @@ export interface WorkspaceSummary {
   staleCount: number;
 }
 
+export interface WorkspacePathStatus {
+  repo: string;
+  path: string;
+  exists: boolean;
+  branch?: string;
+  dirty: boolean;
+  unpushed: boolean;
+}
+
 export enum ExitCode {
   Success = 0,
   UserAbort = 1,

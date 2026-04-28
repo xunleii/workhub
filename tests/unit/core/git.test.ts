@@ -5,7 +5,7 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { branchExists, createWorktree, scanOrigins } from '../../../src/core/git.js';
+import { branchExists, createWorktree, getWorkspaceStatus, scanOrigins } from '../../../src/core/git.js';
 
 describe('scanOrigins', () => {
   let originsDirectory: string;
@@ -117,5 +117,81 @@ describe('git worktree helpers', () => {
     } finally {
       await rm(existingWorktreeDirectory, { recursive: true, force: true });
     }
+  });
+});
+
+describe('workspace status helpers', () => {
+  let repositoryDirectory: string;
+  let remoteDirectory: string;
+  let currentBranch: string;
+
+  beforeEach(async () => {
+    repositoryDirectory = await mkdtemp(join(tmpdir(), 'workhub-status-repo-'));
+    remoteDirectory = await mkdtemp(join(tmpdir(), 'workhub-status-remote-'));
+
+    execSync('git init', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git init --bare', { cwd: remoteDirectory, stdio: 'ignore' });
+    execSync('git config user.email "test@test.com"', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git config user.name "Test User"', { cwd: repositoryDirectory, stdio: 'ignore' });
+    await writeFile(join(repositoryDirectory, 'README.md'), 'init\n', 'utf8');
+    execSync('git add README.md', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git -c commit.gpgsign=false commit -m "init"', { cwd: repositoryDirectory, stdio: 'ignore' });
+    currentBranch = execSync('git rev-parse --abbrev-ref HEAD', {
+      cwd: repositoryDirectory,
+      encoding: 'utf8',
+    }).trim();
+    execSync(`git remote add origin ${remoteDirectory}`, { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync(`git push -u origin ${currentBranch}`, { cwd: repositoryDirectory, stdio: 'ignore' });
+  });
+
+  afterEach(async () => {
+    await rm(repositoryDirectory, { recursive: true, force: true });
+    await rm(remoteDirectory, { recursive: true, force: true });
+  });
+
+  it('detects dirty paths with uncommitted changes', async () => {
+    await writeFile(join(repositoryDirectory, 'README.md'), 'dirty\n', 'utf8');
+
+    await expect(getWorkspaceStatus([{ repo: 'repo-a', path: repositoryDirectory }])).resolves.toEqual([
+      {
+        repo: 'repo-a',
+        path: repositoryDirectory,
+        exists: true,
+        branch: currentBranch,
+        dirty: true,
+        unpushed: false,
+      },
+    ]);
+  });
+
+  it('detects paths with commits ahead of upstream', async () => {
+    await writeFile(join(repositoryDirectory, 'ahead.txt'), 'ahead\n', 'utf8');
+    execSync('git add ahead.txt', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git -c commit.gpgsign=false commit -m "ahead"', { cwd: repositoryDirectory, stdio: 'ignore' });
+
+    await expect(getWorkspaceStatus([{ repo: 'repo-a', path: repositoryDirectory }])).resolves.toEqual([
+      {
+        repo: 'repo-a',
+        path: repositoryDirectory,
+        exists: true,
+        branch: currentBranch,
+        dirty: false,
+        unpushed: true,
+      },
+    ]);
+  });
+
+  it('returns exists=false for stale paths', async () => {
+    const stalePath = join(repositoryDirectory, 'missing-worktree');
+
+    await expect(getWorkspaceStatus([{ repo: 'repo-a', path: stalePath }])).resolves.toEqual([
+      {
+        repo: 'repo-a',
+        path: stalePath,
+        exists: false,
+        dirty: false,
+        unpushed: false,
+      },
+    ]);
   });
 });

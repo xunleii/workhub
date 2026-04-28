@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { simpleGit } from 'simple-git';
 
-import type { OriginRepo } from '../types.js';
+import type { OriginRepo, WorkspacePathStatus } from '../types.js';
 import { ExitCode } from '../types.js';
 import { exitWithCode, printError } from '../ui/output.js';
 
@@ -83,4 +83,46 @@ export async function createWorktree(
 
     throw error;
   }
+}
+
+export async function checkDirty(repoPath: string): Promise<boolean> {
+  const status = await simpleGit(repoPath).status();
+  return !status.isClean();
+}
+
+export async function checkUnpushed(repoPath: string): Promise<boolean> {
+  const status = await simpleGit(repoPath).status();
+  return status.ahead > 0;
+}
+
+export async function getWorkspaceStatus(
+  paths: Array<{ repo: string; path: string }>,
+): Promise<WorkspacePathStatus[]> {
+  return Promise.all(
+    paths.map(async ({ repo, path }) => {
+      try {
+        await access(path);
+      } catch {
+        return {
+          repo,
+          path,
+          exists: false,
+          dirty: false,
+          unpushed: false,
+        };
+      }
+
+      const git = simpleGit(path);
+      const status = await git.status();
+
+      return {
+        repo,
+        path,
+        exists: true,
+        branch: status.current || undefined,
+        dirty: !status.isClean(),
+        unpushed: status.ahead > 0,
+      };
+    }),
+  );
 }

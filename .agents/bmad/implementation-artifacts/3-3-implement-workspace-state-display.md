@@ -1,6 +1,6 @@
 # Story 3.3: Implement Workspace State Display
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -17,26 +17,26 @@ so that I can assess the state of my work before opening or deleting a workspace
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `getWorkspaceStatus(paths)` to `src/core/git.ts` (AC: #1, #2, #3)
-  - [ ] For each path: check existence, current branch, dirty state, unpushed state
-  - [ ] Return `WorkspacePathStatus[]`
-  - [ ] Run checks concurrently with `Promise.all`
+- [x] Task 1: Add `getWorkspaceStatus(paths)` to `src/core/git.ts` (AC: #1, #2, #3)
+  - [x] For each path: check existence, current branch, dirty state, unpushed state
+  - [x] Return `WorkspacePathStatus[]`
+  - [x] Run checks concurrently with `Promise.all`
 
-- [ ] Task 2: Add `WorkspacePathStatus` type to `src/types.ts` (AC: #1)
-  - [ ] `{ repo: string; path: string; exists: boolean; branch?: string; dirty: boolean; unpushed: boolean; }`
+- [x] Task 2: Add `WorkspacePathStatus` type to `src/types.ts` (AC: #1)
+  - [x] `{ repo: string; path: string; exists: boolean; branch?: string; dirty: boolean; unpushed: boolean; }`
 
-- [ ] Task 3: Implement `printWorkspaceStatus(statuses: WorkspacePathStatus[])` in `src/ui/output.ts` (AC: #1, #4)
-  - [ ] TTY mode: formatted table-like output with indicators
-  - [ ] Non-TTY mode: one path per line, tab-separated fields
+- [x] Task 3: Implement `printWorkspaceStatus(statuses: WorkspacePathStatus[])` in `src/ui/output.ts` (AC: #1, #4)
+  - [x] TTY mode: formatted table-like output with indicators
+  - [x] Non-TTY mode: one path per line, tab-separated fields
 
-- [ ] Task 4: Wire `--status` handling in `src/commands/open.ts` (AC: #1)
-  - [ ] `open.ts` already accepts `--status` option (added as stub in Story 3.2)
-  - [ ] When `--status` is set: call `getWorkspaceStatus`, call `printWorkspaceStatus`, exit 0 without launching editor
+- [x] Task 4: Wire `--status` handling in `src/commands/open.ts` (AC: #1)
+  - [x] `open.ts` already accepts `--status` option (added as stub in Story 3.2)
+  - [x] When `--status` is set: call `getWorkspaceStatus`, call `printWorkspaceStatus`, exit 0 without launching editor
 
-- [ ] Task 5: Write tests in `tests/unit/core/git.test.ts` (AC: #2, #3)
-  - [ ] Test: dirty detection for path with uncommitted changes
-  - [ ] Test: unpushed detection for path with commits ahead of upstream
-  - [ ] Test: stale path (non-existent) returns exists=false
+- [x] Task 5: Write tests in `tests/unit/core/git.test.ts` (AC: #2, #3)
+  - [x] Test: dirty detection for path with uncommitted changes
+  - [x] Test: unpushed detection for path with commits ahead of upstream
+  - [x] Test: stale path (non-existent) returns exists=false
 
 ## Dev Notes
 
@@ -170,6 +170,27 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Validation commands: `npm test -- --run tests/unit/core/git.test.ts tests/unit/commands/open.test.ts tests/unit/ui/output.test.ts`, `npm run build`, `npm test`.
+
 ### Completion Notes List
 
+- Added `WorkspacePathStatus` and `getWorkspaceStatus()` to inspect each workspace path for existence, current branch, dirty changes, and ahead-of-upstream state.
+- Added `printWorkspaceStatus()` with human-readable TTY output and tab-separated non-TTY output for scripting.
+- Completed `wh open --status` so it displays workspace state and exits successfully without validating or launching the editor.
+- Added focused coverage for git status detection, CLI status-mode wiring, and status rendering.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/3-3-implement-workspace-state-display.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/commands/open.ts
+- src/core/git.ts
+- src/types.ts
+- src/ui/output.ts
+- tests/unit/commands/open.test.ts
+- tests/unit/core/git.test.ts
+- tests/unit/ui/output.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented workspace status inspection and `wh open --status` output for both TTY and non-TTY usage.

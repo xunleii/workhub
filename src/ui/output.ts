@@ -1,4 +1,4 @@
-import type { SafetyCheckResult } from '../types.js';
+import type { SafetyCheckResult, WorkspacePathStatus } from '../types.js';
 
 export interface PreviewOperation {
   type: 'CREATE' | 'REMOVE' | 'DELETE' | 'WRITE';
@@ -28,6 +28,40 @@ export function printPreview(operations: PreviewOperation[]): void {
 
   for (const operation of operations) {
     process.stdout.write(`  [${operation.type}] ${operation.path}\n`);
+  }
+}
+
+export function printWorkspaceStatus(statuses: WorkspacePathStatus[]): void {
+  if (isTTY) {
+    process.stdout.write('Repository  Branch      State             Path\n');
+
+    for (const status of statuses) {
+      const branch = status.branch ?? '-';
+      const state = !status.exists
+        ? 'stale'
+        : [status.dirty ? 'dirty' : null, status.unpushed ? 'unpushed' : null]
+            .filter((value): value is string => value !== null)
+            .join(', ') || 'clean';
+
+      process.stdout.write(
+        `${status.repo.padEnd(10)}  ${branch.padEnd(10)}  ${state.padEnd(16)}  ${status.path}\n`,
+      );
+    }
+
+    return;
+  }
+
+  for (const status of statuses) {
+    const fields = [
+      status.repo,
+      status.path,
+      status.exists ? 'exists' : 'stale',
+      status.branch ?? '',
+      status.dirty ? 'dirty' : 'clean',
+      status.unpushed ? 'unpushed' : 'pushed',
+    ];
+
+    process.stdout.write(fields.join('\t') + '\n');
   }
 }
 

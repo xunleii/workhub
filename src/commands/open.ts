@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import { access } from 'node:fs/promises';
 
 import { getActiveConfig } from '../core/config.js';
+import { getWorkspaceStatus } from '../core/git.js';
 import {
   listWorkspaceSummaries,
   loadWorkspace,
@@ -13,6 +14,7 @@ import {
   exitWithCode,
   isTTY,
   printError,
+  printWorkspaceStatus,
   printSuccess,
   printWarning,
 } from '../ui/output.js';
@@ -22,7 +24,7 @@ export const openCommand = new Command('open')
   .description('Open an existing workspace')
   .argument('[name]', 'workspace name')
   .option('--status', 'show workspace status')
-  .action(async (nameArg: string | undefined) => {
+  .action(async (nameArg: string | undefined, options: { status?: boolean }) => {
     const config = getActiveConfig();
     let workspaceName = nameArg;
 
@@ -42,8 +44,6 @@ export const openCommand = new Command('open')
       workspaceName = await promptWorkspaceSelect(summaries);
     }
 
-    validateEditorBinary(config.editor);
-
     let workspace;
     try {
       workspace = await loadWorkspace(workspaceName);
@@ -51,6 +51,14 @@ export const openCommand = new Command('open')
       printError(`workspace not found: ${workspaceName}`);
       exitWithCode(ExitCode.ToolError);
     }
+
+    if (options.status) {
+      const statuses = await getWorkspaceStatus(workspace.paths);
+      printWorkspaceStatus(statuses);
+      exitWithCode(ExitCode.Success);
+    }
+
+    validateEditorBinary(config.editor);
 
     const validPaths: string[] = [];
 
