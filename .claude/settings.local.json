@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "WebSearch",
-      "Bash(python3 *)",
-      "mcp__lean-ctx__ctx_multi_read"
-    ]
-  }
-}
