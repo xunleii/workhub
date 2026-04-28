@@ -2,8 +2,16 @@ import { statSync } from 'node:fs';
 
 import * as clack from '@clack/prompts';
 
+import { runSafetyChecks } from '../core/git.js';
 import { ExitCode, type AppConfig } from '../types.js';
-import { exitWithCode, isTTY, printError } from './output.js';
+import {
+  exitWithCode,
+  isTTY,
+  printError,
+  printPreview,
+  printSafetyWarning,
+} from './output.js';
+import type { PreviewOperation } from './output.js';
 import type { OriginRepo, WorkspaceSummary } from '../types.js';
 
 function validateOriginsPath(origins: string | undefined): string | undefined {
@@ -145,6 +153,42 @@ export async function promptBranchName(defaultBranch = ''): Promise<string> {
   }
 
   return (branchName as string).trim();
+}
+
+export async function promptConfirm(message: string): Promise<void> {
+  const confirmed = await clack.confirm({ message });
+
+  if (clack.isCancel(confirmed) || !confirmed) {
+    clack.cancel('Operation cancelled.');
+    exitWithCode(ExitCode.UserAbort);
+  }
+}
+
+export async function runDestructiveFlow(options: {
+  paths: Array<{ path: string }>;
+  operations: PreviewOperation[];
+  force: boolean;
+}): Promise<void> {
+  const results = await runSafetyChecks(options.paths);
+  const hasUnsafePaths = results.some((result) => result.dirty || result.unpushed);
+
+  if (hasUnsafePaths) {
+    printSafetyWarning(results);
+    exitWithCode(ExitCode.GitSafetyBlock);
+  }
+
+  printPreview(options.operations);
+
+  if (options.force) {
+    return;
+  }
+
+  if (!isTTY) {
+    printError('use --force to delete non-interactively');
+    exitWithCode(ExitCode.ToolError);
+  }
+
+  await promptConfirm('Proceed with the above operations?');
 }
 
 export async function promptWorkspaceSelect(summaries: WorkspaceSummary[]): Promise<string> {

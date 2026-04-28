@@ -1,6 +1,6 @@
 # Story 5.2: Implement Operation Preview and Confirmation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,27 +18,27 @@ so that I have full control over every destructive action.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Verify `printPreview` and `printSafetyWarning` in `src/ui/output.ts` (AC: #1, #2)
-  - [ ] Story 1.2 should have implemented these — confirm they are correct and complete
-  - [ ] If missing or incorrect, complete them now: `printPreview(PreviewOperation[])` and `printSafetyWarning(SafetyCheckResult[])`
+- [x] Task 1: Verify `printPreview` and `printSafetyWarning` in `src/ui/output.ts` (AC: #1, #2)
+  - [x] Story 1.2 should have implemented these — confirm they are correct and complete
+  - [x] If missing or incorrect, complete them now: `printPreview(PreviewOperation[])` and `printSafetyWarning(SafetyCheckResult[])`
 
-- [ ] Task 2: Implement `promptConfirm(message: string): Promise<void>` in `src/ui/prompts.ts` (AC: #5)
-  - [ ] Use `clack.confirm({ message })` or `clack.text` asking for explicit confirmation
-  - [ ] If `clack.isCancel()` or user declines: call `clack.cancel()` and exit 1
+- [x] Task 2: Implement `promptConfirm(message: string): Promise<void>` in `src/ui/prompts.ts` (AC: #5)
+  - [x] Use `clack.confirm({ message })` or `clack.text` asking for explicit confirmation
+  - [x] If `clack.isCancel()` or user declines: call `clack.cancel()` and exit 1
 
-- [ ] Task 3: Implement `runDestructiveFlow` helper in `src/ui/prompts.ts` (or inline in delete.ts) (AC: #3, #4, #5)
-  - [ ] Accept: `paths[]`, `operations[]`, `force: boolean`
-  - [ ] Run `runSafetyChecks(paths)`
-  - [ ] If any unsafe: `printSafetyWarning(results)` + `exitWithCode(ExitCode.GitSafetyBlock)` regardless of `--force`
-  - [ ] `printPreview(operations)`
-  - [ ] If `force` and all clean: skip confirmation prompt
-  - [ ] If not `force` or TTY: `promptConfirm(...)` — exit 1 if declined
-  - [ ] If non-TTY and not `force`: error "use --force to delete non-interactively", exit 2
+- [x] Task 3: Implement `runDestructiveFlow` helper in `src/ui/prompts.ts` (or inline in delete.ts) (AC: #3, #4, #5)
+  - [x] Accept: `paths[]`, `operations[]`, `force: boolean`
+  - [x] Run `runSafetyChecks(paths)`
+  - [x] If any unsafe: `printSafetyWarning(results)` + `exitWithCode(ExitCode.GitSafetyBlock)` regardless of `--force`
+  - [x] `printPreview(operations)`
+  - [x] If `force` and all clean: skip confirmation prompt
+  - [x] If not `force` or TTY: `promptConfirm(...)` — exit 1 if declined
+  - [x] If non-TTY and not `force`: error "use --force to delete non-interactively", exit 2
 
-- [ ] Task 4: Write tests in `tests/unit/ui/output.test.ts` and `tests/unit/ui/prompts.test.ts` (AC: #1, #2, #4)
-  - [ ] Test: `printPreview` outputs all operations in correct format
-  - [ ] Test: `printSafetyWarning` lists dirty and unpushed paths
-  - [ ] Test: `--force` does not bypass safety block (unsafe paths → exit 3)
+- [x] Task 4: Write tests in `tests/unit/ui/output.test.ts` and `tests/unit/ui/prompts.test.ts` (AC: #1, #2, #4)
+  - [x] Test: `printPreview` outputs all operations in correct format
+  - [x] Test: `printSafetyWarning` lists dirty and unpushed paths
+  - [x] Test: `--force` does not bypass safety block (unsafe paths → exit 3)
 
 ## Dev Notes
 
@@ -157,6 +157,21 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Validation commands: `npm test -- --run tests/unit/ui/output.test.ts tests/unit/ui/prompts.test.ts`, `npm run build`, `npm test`.
+
 ### Completion Notes List
 
+- Confirmed the existing preview and safety warning output matched the destructive-flow format expected by the PRD and architecture.
+- Added `promptConfirm()` and `runDestructiveFlow()` in the UI layer so destructive commands share the same safety, preview, and confirmation semantics.
+- Added prompt-layer coverage for cancelled confirmations, force-with-unsafe blocking, and force-with-safe prompt skipping.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/5-2-implement-operation-preview-and-confirmation.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/ui/prompts.ts
+- tests/unit/ui/prompts.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented reusable destructive-operation preview and confirmation flow for upcoming delete behavior.
