@@ -11,6 +11,7 @@ describe('src/core/completion', () => {
     expect(script).toContain('--origins');
     expect(script).toContain('command wh __complete repos');
     expect(script).toContain('command wh __complete workspace-repos');
+    expect(script).toContain('compopt +o default +o bashdefault');
   });
 
   it('renders zsh completion with _files directory completion', () => {
@@ -21,6 +22,7 @@ describe('src/core/completion', () => {
     expect(script).toContain('completion');
     expect(script).toContain('_wh_repositories');
     expect(script).toContain('workspace-repos');
+    expect(script).toContain('compadd -a repositories');
   });
 
   it('renders fish completion with directory completion helpers', () => {

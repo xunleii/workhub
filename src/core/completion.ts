@@ -64,14 +64,17 @@ _wh_complete() {
       return
       ;;
     --repo)
+      compopt +o default +o bashdefault 2>/dev/null
       COMPREPLY=( $(compgen -W "$(_wh_repositories)" -- "$cur") )
       return
       ;;
     --add)
+      compopt +o default +o bashdefault 2>/dev/null
       COMPREPLY=( $(compgen -W "$(_wh_repositories)" -- "$cur") )
       return
       ;;
     --remove)
+      compopt +o default +o bashdefault 2>/dev/null
       COMPREPLY=( $(compgen -W "$(_wh_workspace_repositories "$workspace_name")" -- "$cur") )
       return
       ;;
@@ -137,7 +140,7 @@ _wh_workspaces() {
 
   workspaces=("\${(@f)$(wh __complete workspaces 2>/dev/null)}")
 
-  _describe 'workspace' workspaces
+  compadd -a workspaces
 }
 
 _wh_repositories() {
@@ -145,7 +148,7 @@ _wh_repositories() {
 
   repositories=("\${(@f)$(wh __complete repos 2>/dev/null)}")
 
-  _describe 'repository' repositories
+  compadd -a repositories
 }
 
 _wh_workspace_repositories() {
@@ -155,7 +158,7 @@ _wh_workspace_repositories() {
   [[ -n "$workspace_name" ]] || return
   repositories=("\${(@f)$(wh __complete workspace-repos "$workspace_name" 2>/dev/null)}")
 
-  _describe 'repository' repositories
+  compadd -a repositories
 }
 
 _wh() {
