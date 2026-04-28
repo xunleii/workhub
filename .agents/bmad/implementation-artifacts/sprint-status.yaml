@@ -46,7 +46,7 @@ development_status:
   epic-1: in-progress
   1-1-initialize-project-scaffold: review
   1-2-implement-cross-cutting-cli-infrastructure: review
-  1-3-implement-first-run-configuration-setup: ready-for-dev
+  1-3-implement-first-run-configuration-setup: review
   1-4-implement-config-loading-and-validation: ready-for-dev
   epic-1-retrospective: optional
 

@@ -1,6 +1,6 @@
 # Story 1.3: Implement First-Run Configuration Setup
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,30 +18,30 @@ so that I can start using the tool without reading documentation.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement config path resolution in `src/core/config.ts` (AC: #1, #2, #3)
-  - [ ] Implement `resolveConfigPath(): string` — returns `$XDG_CONFIG_HOME/workhub/config.yaml` or `~/.config/workhub/config.yaml`
-  - [ ] Implement `configExists(): Promise<boolean>` — checks if config file exists on disk
-  - [ ] Implement `saveConfig(config: AppConfig): Promise<void>` — writes YAML to config path, creates directory if absent
+- [x] Task 1: Implement config path resolution in `src/core/config.ts` (AC: #1, #2, #3)
+  - [x] Implement `resolveConfigPath(): string` — returns `$XDG_CONFIG_HOME/workhub/config.yaml` or `~/.config/workhub/config.yaml`
+  - [x] Implement `configExists(): Promise<boolean>` — checks if config file exists on disk
+  - [x] Implement `saveConfig(config: AppConfig): Promise<void>` — writes YAML to config path, creates directory if absent
 
-- [ ] Task 2: Implement first-run prompts in `src/ui/prompts.ts` (AC: #1, #4, #5)
-  - [ ] Implement `runFirstRunSetup(overrides?: { origins?: string; editor?: string }): Promise<AppConfig>` — full @clack/prompts flow for first-run
-  - [ ] Show `clack.intro()` welcome message
-  - [ ] Prompt for `origins` path with validation (directory must exist)
-  - [ ] Prompt for editor with default `'zed'` using `clack.text({ initialValue: 'zed' })`
-  - [ ] Check `clack.isCancel()` after each prompt — call `clack.cancel()` and exit 1 if cancelled
-  - [ ] If `overrides` are provided and non-TTY, skip prompts and use override values directly
+- [x] Task 2: Implement first-run prompts in `src/ui/prompts.ts` (AC: #1, #4, #5)
+  - [x] Implement `runFirstRunSetup(overrides?: { origins?: string; editor?: string }): Promise<AppConfig>` — full @clack/prompts flow for first-run
+  - [x] Show `clack.intro()` welcome message
+  - [x] Prompt for `origins` path with validation (directory must exist)
+  - [x] Prompt for editor with default `'zed'` using `clack.text({ initialValue: 'zed' })`
+  - [x] Check `clack.isCancel()` after each prompt — call `clack.cancel()` and exit 1 if cancelled
+  - [x] If `overrides` are provided and non-TTY, skip prompts and use override values directly
 
-- [ ] Task 3: Wire first-run detection into `src/index.ts` (AC: #1, #2, #3)
-  - [ ] Before parsing the command, call `configExists()`
-  - [ ] If config does not exist, call `runFirstRunSetup(overrides)` to collect config
-  - [ ] Call `saveConfig(config)` with the result
-  - [ ] Pass the loaded/created config to the command pipeline
+- [x] Task 3: Wire first-run detection into `src/index.ts` (AC: #1, #2, #3)
+  - [x] Before parsing the command, call `configExists()`
+  - [x] If config does not exist, call `runFirstRunSetup(overrides)` to collect config
+  - [x] Call `saveConfig(config)` with the result
+  - [x] Pass the loaded/created config to the command pipeline
 
-- [ ] Task 4: Write unit tests (AC: #3, #4, #5)
-  - [ ] Test: `resolveConfigPath` returns XDG path when `XDG_CONFIG_HOME` is set
-  - [ ] Test: `resolveConfigPath` returns `~/.config/...` when `XDG_CONFIG_HOME` is not set
-  - [ ] Test: `saveConfig` creates directory and writes correct YAML
-  - [ ] Test: `configExists` returns false when file missing, true when present
+- [x] Task 4: Write unit tests (AC: #3, #4, #5)
+  - [x] Test: `resolveConfigPath` returns XDG path when `XDG_CONFIG_HOME` is set
+  - [x] Test: `resolveConfigPath` returns `~/.config/...` when `XDG_CONFIG_HOME` is not set
+  - [x] Test: `saveConfig` creates directory and writes correct YAML
+  - [x] Test: `configExists` returns false when file missing, true when present
 
 ## Dev Notes
 
@@ -213,6 +213,27 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Red phase: `npm test -- --run tests/unit/core/config.test.ts` failed before implementation because `resolveConfigPath`, `configExists`, and `saveConfig` were still missing from `src/core/config.ts`.
+- Validation commands: `npm test -- --run tests/unit/core/config.test.ts`, `npm run build`, `npm test`.
+- Manual CLI validation: confirmed first-run config creation in non-TTY mode with `--origins/--editor`, confirmed existing-config skip, confirmed invalid non-TTY origins exits with code 2, and completed an interactive TTY run that wrote the expected YAML config.
+
 ### Completion Notes List
 
+- Implemented config path resolution and YAML persistence in `src/core/config.ts`, covering XDG and default `~/.config/workhub/config.yaml` locations.
+- Added `runFirstRunSetup()` in `src/ui/prompts.ts` with first-run intro, origins validation, editor prompt, non-TTY override handling, and cancel/error exits using the shared output helpers.
+- Wired first-run detection into `src/index.ts` so config setup completes before command parsing continues.
+- Added unit coverage for config persistence plus prompt behavior in non-TTY and cancel scenarios, then validated the interactive first-run path manually.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/1-3-implement-first-run-configuration-setup.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/core/config.ts
+- src/index.ts
+- src/ui/prompts.ts
+- tests/unit/core/config.test.ts
+- tests/unit/ui/prompts.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented first-run configuration setup, wired it into CLI startup, added config/prompt tests, and validated TTY/non-TTY setup flows.
