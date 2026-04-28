@@ -1,0 +1,8 @@
+name: ticket-1234
+branch: feature/test
+created_at: '2026-04-27T10:00:00Z'
+paths:
+  - repo: repo-a
+    path: /tmp/test-repos/repo-a/.git/worktrees/feature-test
+  - repo: repo-b
+    path: /tmp/test-repos/repo-b/.git/worktrees/feature-test

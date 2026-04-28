@@ -1,0 +1,80 @@
+# generated: 2026-04-28
+# last_updated: 2026-04-28
+# project: workhub
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: .agents/bmad/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-04-28
+last_updated: 2026-04-28
+project: workhub
+project_key: NOKEY
+tracking_system: file-system
+story_location: .agents/bmad/implementation-artifacts
+
+development_status:
+  # Epic 1: CLI Foundation & First-Run Setup
+  epic-1: in-progress
+  1-1-initialize-project-scaffold: review
+  1-2-implement-cross-cutting-cli-infrastructure: ready-for-dev
+  1-3-implement-first-run-configuration-setup: ready-for-dev
+  1-4-implement-config-loading-and-validation: ready-for-dev
+  epic-1-retrospective: optional
+
+  # Epic 2: Create Workspace
+  epic-2: in-progress
+  2-1-implement-origins-directory-scanner: ready-for-dev
+  2-2-implement-workspace-persistence-layer: ready-for-dev
+  2-3-implement-git-worktree-creation: ready-for-dev
+  2-4-implement-wh-new-interactive-workspace-creation: ready-for-dev
+  2-5-implement-editor-launch: ready-for-dev
+  epic-2-retrospective: optional
+
+  # Epic 3: Open and Inspect Workspaces
+  epic-3: in-progress
+  3-1-implement-workspace-listing-and-stale-path-detection: ready-for-dev
+  3-2-implement-wh-open-reopen-workspace-in-editor: ready-for-dev
+  3-3-implement-workspace-state-display: ready-for-dev
+  epic-3-retrospective: optional
+
+  # Epic 4: Edit Workspace
+  epic-4: in-progress
+  4-1-implement-wh-edit-add-add-repository-to-workspace: ready-for-dev
+  4-2-implement-wh-edit-remove-disassociate-path-from-workspace: ready-for-dev
+  epic-4-retrospective: optional
+
+  # Epic 5: Safe Workspace Deletion
+  epic-5: in-progress
+  5-1-implement-git-safety-checks: ready-for-dev
+  5-2-implement-operation-preview-and-confirmation: ready-for-dev
+  5-3-implement-wh-delete-full-workspace-removal: ready-for-dev
+  epic-5-retrospective: optional
