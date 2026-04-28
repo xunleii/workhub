@@ -85,6 +85,20 @@ export async function addPath(
   await saveWorkspace(workspace);
 }
 
+export async function removePath(workspaceName: string, repoName: string): Promise<string> {
+  const workspace = await loadWorkspace(workspaceName);
+  const index = workspace.paths.findIndex((workspacePath) => workspacePath.repo === repoName);
+
+  if (index === -1) {
+    throw new Error(`repository not in workspace: ${repoName}`);
+  }
+
+  const [removedPath] = workspace.paths.splice(index, 1);
+  await saveWorkspace(workspace);
+
+  return removedPath.path;
+}
+
 export async function listWorkspaceSummaries(): Promise<WorkspaceSummary[]> {
   const workspaceNames = await listWorkspaces();
   const summaries = await Promise.all(

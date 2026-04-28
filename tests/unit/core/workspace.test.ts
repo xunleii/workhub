@@ -103,6 +103,41 @@ describe('src/core/workspace', () => {
     });
   });
 
+  it('removePath removes the matching repository entry and saves the workspace', async () => {
+    const { loadWorkspace, removePath, saveWorkspace } = await import('../../../src/core/workspace.js');
+
+    await saveWorkspace(baseWorkspaceConfig);
+
+    await expect(removePath('ticket-1234', 'repo-b')).resolves.toBe('/tmp/repos/repo-b/.git/worktrees/feature-new-api');
+    await expect(loadWorkspace('ticket-1234')).resolves.toEqual({
+      ...baseWorkspaceConfig,
+      paths: [{ repo: 'repo-a', path: '/tmp/repos/repo-a/.git/worktrees/feature-new-api' }],
+    });
+  });
+
+  it('removePath throws when the repository is not in the workspace', async () => {
+    const { removePath, saveWorkspace } = await import('../../../src/core/workspace.js');
+
+    await saveWorkspace(baseWorkspaceConfig);
+
+    await expect(removePath('ticket-1234', 'repo-c')).rejects.toThrow('repository not in workspace: repo-c');
+  });
+
+  it('removePath does not delete the worktree directory from disk', async () => {
+    const worktreeDirectory = join(testDirectory, 'repo-b-ticket-1234');
+    const { removePath, saveWorkspace } = await import('../../../src/core/workspace.js');
+
+    await mkdir(worktreeDirectory, { recursive: true });
+    await saveWorkspace({
+      ...baseWorkspaceConfig,
+      paths: [{ repo: 'repo-b', path: worktreeDirectory }],
+    });
+
+    await removePath('ticket-1234', 'repo-b');
+
+    await expect(access(worktreeDirectory)).resolves.toBeUndefined();
+  });
+
   it('name validation rejects invalid characters before writing', async () => {
     const { resolveWorkspacesDir, saveWorkspace } = await import('../../../src/core/workspace.js');
 

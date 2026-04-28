@@ -2,7 +2,7 @@ import { Command } from 'commander';
 
 import { getActiveConfig } from '../core/config.js';
 import { createWorktree, scanOrigins } from '../core/git.js';
-import { addPath, buildWorktreePath, loadWorkspace } from '../core/workspace.js';
+import { addPath, buildWorktreePath, loadWorkspace, removePath } from '../core/workspace.js';
 import { ExitCode } from '../types.js';
 import { exitWithCode, isTTY, printError, printSuccess } from '../ui/output.js';
 import { promptBranchName } from '../ui/prompts.js';
@@ -25,8 +25,14 @@ export const editCommand = new Command('edit')
     }
 
     if (options.remove) {
-      printError('--remove is not implemented yet');
-      exitWithCode(ExitCode.ToolError);
+      try {
+        const removedPath = await removePath(workspaceName, options.remove);
+        printSuccess(`Removed ${options.remove} from workspace. Worktree at ${removedPath} is untouched.`);
+        return;
+      } catch (error) {
+        printError((error as Error).message);
+        exitWithCode(ExitCode.ToolError);
+      }
     }
 
     const workspace = await loadWorkspace(workspaceName).catch(() => {

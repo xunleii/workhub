@@ -13,6 +13,7 @@ afterEach(() => {
 describe('src/commands/edit', () => {
   async function loadEditCommand(options?: {
     isTTY?: boolean;
+    removePathImplementation?: (workspaceName: string, repoName: string) => Promise<string>;
     workspacePaths?: Array<{ repo: string; path: string }>;
     repositories?: Array<{ name: string; path: string }>;
   }) {
@@ -30,6 +31,9 @@ describe('src/commands/edit', () => {
     const printError = vi.fn();
     const printSuccess = vi.fn();
     const promptBranchName = vi.fn(async () => 'feature/x');
+    const removePath = vi.fn(
+      options?.removePathImplementation ?? (async (_workspaceName: string, repoName: string) => `/tmp/${repoName}-ticket-1234`),
+    );
     const scanOrigins = vi.fn(async () => options?.repositories ?? [{ name: 'repo-b', path: '/tmp/repo-b' }]);
 
     vi.doMock('../../../src/ui/output.js', () => ({
@@ -55,6 +59,7 @@ describe('src/commands/edit', () => {
       addPath,
       buildWorktreePath: vi.fn((repoPath: string, workspaceName: string) => `${repoPath}-${workspaceName}`),
       loadWorkspace,
+      removePath,
     }));
 
     vi.doMock('../../../src/ui/prompts.js', () => ({
@@ -73,6 +78,7 @@ describe('src/commands/edit', () => {
         printError,
         printSuccess,
         promptBranchName,
+        removePath,
         scanOrigins,
       },
     };
@@ -138,5 +144,34 @@ describe('src/commands/edit', () => {
       path: '/tmp/repo-b-ticket-1234',
     });
     expect(mocks.printSuccess).toHaveBeenCalledWith('Added repo-b to workspace ticket-1234');
+  });
+
+  it('removes the repository from the workspace without touching the filesystem', async () => {
+    const { editCommand, mocks } = await loadEditCommand();
+
+    await editCommand.parseAsync(['node', 'edit', 'ticket-1234', '--remove', 'repo-b'], { from: 'node' });
+
+    expect(mocks.removePath).toHaveBeenCalledWith('ticket-1234', 'repo-b');
+    expect(mocks.createWorktree).not.toHaveBeenCalled();
+    expect(mocks.addPath).not.toHaveBeenCalled();
+    expect(mocks.promptBranchName).not.toHaveBeenCalled();
+    expect(mocks.printSuccess).toHaveBeenCalledWith(
+      'Removed repo-b from workspace. Worktree at /tmp/repo-b-ticket-1234 is untouched.',
+    );
+  });
+
+  it('remove reports an error when the repository is not in the workspace', async () => {
+    const { editCommand, mocks } = await loadEditCommand({
+      removePathImplementation: async () => {
+        throw new Error('repository not in workspace: repo-b');
+      },
+    });
+
+    await expect(
+      editCommand.parseAsync(['node', 'edit', 'ticket-1234', '--remove', 'repo-b'], { from: 'node' }),
+    ).rejects.toThrow('exit:2');
+
+    expect(mocks.printError).toHaveBeenCalledWith('repository not in workspace: repo-b');
+    expect(mocks.promptBranchName).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,6 @@
 # Story 4.2: Implement `wh edit --remove` — Disassociate Path from Workspace
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -16,23 +16,23 @@ so that I can focus my workspace without losing local changes.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `removePath(name, repoName)` in `src/core/workspace.ts` (AC: #1, #2)
-  - [ ] Load workspace
-  - [ ] Find entry by `repo` name — throw if not found
-  - [ ] Remove entry from `paths` array
-  - [ ] Call `saveWorkspace` atomically
-  - [ ] Return the removed entry's `path` (for confirmation message)
+- [x] Task 1: Implement `removePath(name, repoName)` in `src/core/workspace.ts` (AC: #1, #2)
+  - [x] Load workspace
+  - [x] Find entry by `repo` name — throw if not found
+  - [x] Remove entry from `paths` array
+  - [x] Call `saveWorkspace` atomically
+  - [x] Return the removed entry's `path` (for confirmation message)
 
-- [ ] Task 2: Implement `--remove` subflow in `src/commands/edit.ts` (AC: #1, #2, #3)
-  - [ ] Call `removePath(workspaceName, opts.remove)`
-  - [ ] Print success: `"Removed ${opts.remove} from workspace. Worktree at ${removedPath} is untouched."`
-  - [ ] Do NOT delete anything from disk
-  - [ ] No confirmation prompt (even in TTY) — this operation is non-destructive to disk
+- [x] Task 2: Implement `--remove` subflow in `src/commands/edit.ts` (AC: #1, #2, #3)
+  - [x] Call `removePath(workspaceName, opts.remove)`
+  - [x] Print success: `"Removed ${opts.remove} from workspace. Worktree at ${removedPath} is untouched."`
+  - [x] Do NOT delete anything from disk
+  - [x] No confirmation prompt (even in TTY) — this operation is non-destructive to disk
 
-- [ ] Task 3: Write tests in `tests/unit/commands/edit.test.ts` (AC: #1, #2, #3)
-  - [ ] Test: `removePath` removes correct entry and saves
-  - [ ] Test: `removePath` throws "repository not in workspace" for unknown repo
-  - [ ] Test: disk worktree is NOT touched (directory still exists after `removePath`)
+- [x] Task 3: Write tests in `tests/unit/commands/edit.test.ts` (AC: #1, #2, #3)
+  - [x] Test: `removePath` removes correct entry and saves
+  - [x] Test: `removePath` throws "repository not in workspace" for unknown repo
+  - [x] Test: disk worktree is NOT touched (directory still exists after `removePath`)
 
 ## Dev Notes
 
@@ -130,6 +130,23 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Validation commands: `npm test -- --run tests/unit/commands/edit.test.ts tests/unit/core/workspace.test.ts`, `npm run build`, `npm test`.
+
 ### Completion Notes List
 
+- Added `removePath()` to update workspace YAML atomically while returning the removed worktree path for user-facing confirmation.
+- Extended `src/commands/edit.ts` with the `--remove` flow so it updates only workspace metadata and never touches the filesystem.
+- Added focused tests for the remove command flow and persistence-layer guarantees that the worktree directory remains on disk.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/4-2-implement-wh-edit-remove-disassociate-path-from-workspace.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/commands/edit.ts
+- src/core/workspace.ts
+- tests/unit/commands/edit.test.ts
+- tests/unit/core/workspace.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented `wh edit --remove` with atomic workspace updates that leave worktrees untouched on disk.
