@@ -2,8 +2,17 @@
 import { createRequire } from 'module';
 import { Command } from 'commander';
 
-import { configExists, saveConfig } from './core/config.js';
+import {
+  configExists,
+  loadConfig,
+  saveConfig,
+  setActiveConfig,
+  validateConfig,
+} from './core/config.js';
 import { runFirstRunSetup } from './ui/prompts.js';
+import type { AppConfig } from './types.js';
+import { ExitCode } from './types.js';
+import { exitWithCode, printError } from './ui/output.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json') as { version: string };
@@ -39,6 +48,16 @@ function readSetupOverrides(argv: string[]): { origins?: string; editor?: string
   return overrides;
 }
 
+function applyFlagOverrides(config: AppConfig, overrides: { origins?: string; editor?: string }): void {
+  if (overrides.origins) {
+    config.origins = overrides.origins;
+  }
+
+  if (overrides.editor) {
+    config.editor = overrides.editor;
+  }
+}
+
 const program = new Command();
 
 program
@@ -54,9 +73,22 @@ program.command('open [name]').description('Open an existing workspace');
 program.command('edit <name>').description('Edit an existing workspace');
 program.command('delete <name>').description('Delete a workspace and its worktrees');
 
+const setupOverrides = readSetupOverrides(process.argv);
+
 if (!(await configExists())) {
-  const config = await runFirstRunSetup(readSetupOverrides(process.argv));
+  const config = await runFirstRunSetup(setupOverrides);
   await saveConfig(config);
+}
+
+try {
+  const activeConfig = await loadConfig();
+
+  applyFlagOverrides(activeConfig, setupOverrides);
+  await validateConfig(activeConfig);
+  setActiveConfig(activeConfig);
+} catch (error) {
+  printError((error as Error).message);
+  exitWithCode(ExitCode.ToolError);
 }
 
 await program.parseAsync(process.argv);

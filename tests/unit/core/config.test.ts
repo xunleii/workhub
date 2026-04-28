@@ -3,7 +3,7 @@ import { tmpdir, homedir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { configExists, resolveConfigPath, saveConfig } from '../../../src/core/config.js';
+import { configExists, loadConfig, resolveConfigPath, saveConfig } from '../../../src/core/config.js';
 
 const createdDirectories: string[] = [];
 
@@ -61,5 +61,53 @@ describe('src/core/config', () => {
     });
 
     await expect(configExists()).resolves.toBe(true);
+  });
+
+  it('loadConfig returns the config from a valid YAML file', async () => {
+    const xdgDirectory = await mkdtemp(join(tmpdir(), 'workhub-load-'));
+    createdDirectories.push(xdgDirectory);
+    process.env.XDG_CONFIG_HOME = xdgDirectory;
+
+    await saveConfig({
+      origins: '/tmp/repos',
+      editor: 'code',
+    });
+
+    await expect(loadConfig()).resolves.toEqual({
+      origins: '/tmp/repos',
+      editor: 'code',
+    });
+  });
+
+  it("loadConfig defaults editor to 'zed' when it is absent", async () => {
+    const xdgDirectory = await mkdtemp(join(tmpdir(), 'workhub-default-editor-'));
+    createdDirectories.push(xdgDirectory);
+    process.env.XDG_CONFIG_HOME = xdgDirectory;
+
+    const configPath = join(xdgDirectory, 'workhub', 'config.yaml');
+    await rm(join(xdgDirectory, 'workhub'), { recursive: true, force: true });
+    await saveConfig({
+      origins: '/tmp/repos',
+      editor: 'code',
+    });
+    await rm(configPath, { force: true });
+    await import('node:fs/promises').then(({ writeFile }) =>
+      writeFile(join(xdgDirectory, 'workhub', 'config.yaml'), 'origins: /tmp/repos\n', 'utf8'),
+    );
+
+    await expect(loadConfig()).resolves.toEqual({
+      origins: '/tmp/repos',
+      editor: 'zed',
+    });
+  });
+
+  it('loadConfig throws when the config file does not exist', async () => {
+    const xdgDirectory = await mkdtemp(join(tmpdir(), 'workhub-missing-config-'));
+    createdDirectories.push(xdgDirectory);
+    process.env.XDG_CONFIG_HOME = xdgDirectory;
+
+    await expect(loadConfig()).rejects.toThrow(
+      `Config file not found at ${join(xdgDirectory, 'workhub', 'config.yaml')}. Run 'wh new' to set up.`,
+    );
   });
 });

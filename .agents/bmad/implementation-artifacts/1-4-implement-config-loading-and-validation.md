@@ -1,6 +1,6 @@
 # Story 1.4: Implement Config Loading and Validation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -17,26 +17,26 @@ so that misconfigured installations fail with clear errors instead of mysterious
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `loadConfig()` in `src/core/config.ts` (AC: #1, #3)
-  - [ ] Read the YAML file at `resolveConfigPath()` using `js-yaml`
-  - [ ] Return `AppConfig` with `editor` defaulting to `'zed'` if not present in file
-  - [ ] Throw a descriptive error if the config file does not exist (caller handles exit code)
+- [x] Task 1: Implement `loadConfig()` in `src/core/config.ts` (AC: #1, #3)
+  - [x] Read the YAML file at `resolveConfigPath()` using `js-yaml`
+  - [x] Return `AppConfig` with `editor` defaulting to `'zed'` if not present in file
+  - [x] Throw a descriptive error if the config file does not exist (caller handles exit code)
 
-- [ ] Task 2: Implement `validateConfig()` in `src/core/config.ts` (AC: #2)
-  - [ ] Check that `config.origins` directory exists on disk using `fs/promises.access`
-  - [ ] If not found: call `printError(`origins path not found: ${config.origins}`)` and `exitWithCode(ExitCode.ToolError)`
+- [x] Task 2: Implement `validateConfig()` in `src/core/config.ts` (AC: #2)
+  - [x] Check that `config.origins` directory exists on disk using `fs/promises.access`
+  - [x] If not found: call `printError(`origins path not found: ${config.origins}`)` and `exitWithCode(ExitCode.ToolError)`
 
-- [ ] Task 3: Wire `loadConfig` + `validateConfig` into `src/index.ts` (AC: #1, #4)
-  - [ ] After first-run setup (Story 1.3) or when config already exists, call `loadConfig()`
-  - [ ] Apply `--origins` / `--editor` flag overrides to the loaded config
-  - [ ] Call `validateConfig()` before dispatching to any command
-  - [ ] Pass the final `AppConfig` to commands via Commander's option inheritance or a module-level store
+- [x] Task 3: Wire `loadConfig` + `validateConfig` into `src/index.ts` (AC: #1, #4)
+  - [x] After first-run setup (Story 1.3) or when config already exists, call `loadConfig()`
+  - [x] Apply `--origins` / `--editor` flag overrides to the loaded config
+  - [x] Call `validateConfig()` before dispatching to any command
+  - [x] Pass the final `AppConfig` to commands via Commander's option inheritance or a module-level store
 
-- [ ] Task 4: Write unit tests (AC: #1, #2, #3, #4)
-  - [ ] Test: `loadConfig` returns correct AppConfig from a valid YAML file
-  - [ ] Test: `loadConfig` defaults `editor` to `'zed'` when field is absent
-  - [ ] Test: `loadConfig` throws when config file does not exist
-  - [ ] Test: `resolveConfigPath` uses `XDG_CONFIG_HOME` when set (from Story 1.3 — verify it works end-to-end)
+- [x] Task 4: Write unit tests (AC: #1, #2, #3, #4)
+  - [x] Test: `loadConfig` returns correct AppConfig from a valid YAML file
+  - [x] Test: `loadConfig` defaults `editor` to `'zed'` when field is absent
+  - [x] Test: `loadConfig` throws when config file does not exist
+  - [x] Test: `resolveConfigPath` uses `XDG_CONFIG_HOME` when set (from Story 1.3 — verify it works end-to-end)
 
 ## Dev Notes
 
@@ -161,6 +161,24 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Red phase: `npm test -- --run tests/unit/core/config.test.ts` failed before implementation because `loadConfig` was missing from `src/core/config.ts`.
+- Validation commands: `npm run build`, `npm test`.
+- Manual CLI validation: verified that `--origins/--editor` override the loaded config for a single invocation without rewriting `config.yaml`, and verified invalid configured origins exit with code 2 and a stderr error.
+
 ### Completion Notes List
 
+- Added `loadConfig`, `validateConfig`, `setActiveConfig`, and `getActiveConfig` to `src/core/config.ts` while preserving the Story 1.3 APIs.
+- Wired config loading, per-invocation flag overrides, validation, and active-config registration into `src/index.ts` before command dispatch.
+- Extended unit coverage for config loading/defaulting/missing-file behavior and validated override plus invalid-origins CLI flows end-to-end.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/1-4-implement-config-loading-and-validation.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/core/config.ts
+- src/index.ts
+- tests/unit/core/config.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented config loading/validation, registered the active config for command access, and verified override plus invalid-config startup behavior.
