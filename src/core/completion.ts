@@ -263,15 +263,15 @@ complete -c wh -n '__fish_seen_subcommand_from new' -l repo -x -a '(__wh_reposit
 complete -c wh -n '__fish_seen_subcommand_from new' -l branch -x -d 'Branch name'
 complete -c wh -n '__fish_seen_subcommand_from new' -l no-open -d 'Skip opening in editor'
 
-complete -c wh -n '__fish_seen_subcommand_from open; and __fish_is_nth_token 3' -a '(__wh_workspaces)' -d 'Workspace name'
+complete -c wh -n '__fish_seen_subcommand_from open; and __fish_is_nth_token 2' -a '(__wh_workspaces)' -d 'Workspace name'
 complete -c wh -n '__fish_seen_subcommand_from open' -l status -d 'Show workspace status'
 
-complete -c wh -n '__fish_seen_subcommand_from edit; and __fish_is_nth_token 3' -a '(__wh_workspaces)' -d 'Workspace name'
+complete -c wh -n '__fish_seen_subcommand_from edit; and __fish_is_nth_token 2' -a '(__wh_workspaces)' -d 'Workspace name'
 complete -c wh -n '__fish_seen_subcommand_from edit' -l add -x -a '(__wh_repositories)' -d 'Repository to add'
 complete -c wh -n '__fish_seen_subcommand_from edit' -l remove -x -a '(__wh_workspace_repositories)' -d 'Repository to remove'
 complete -c wh -n '__fish_seen_subcommand_from edit' -l branch -x -d 'Branch name'
 
-complete -c wh -n '__fish_seen_subcommand_from delete; and __fish_is_nth_token 3' -a '(__wh_workspaces)' -d 'Workspace name'
+complete -c wh -n '__fish_seen_subcommand_from delete; and __fish_is_nth_token 2' -a '(__wh_workspaces)' -d 'Workspace name'
 complete -c wh -n '__fish_seen_subcommand_from delete' -l force -d 'Skip confirmation when safe'
 
 complete -c wh -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish' -d 'Shell name'

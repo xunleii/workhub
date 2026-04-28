@@ -32,6 +32,6 @@ describe('src/core/completion', () => {
     expect(script).toContain('complete -c wh -n \'__fish_seen_subcommand_from delete\' -l force');
     expect(script).toContain('complete -c wh -n \'__fish_seen_subcommand_from new\' -l repo -x -a \'(__wh_repositories)\'');
     expect(script).toContain('complete -c wh -n \'__fish_seen_subcommand_from edit\' -l remove -x -a \'(__wh_workspace_repositories)\'');
-    expect(script).toContain('__fish_is_nth_token 3');
+    expect(script).toContain('__fish_is_nth_token 2');
   });
 });
