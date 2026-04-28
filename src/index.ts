@@ -9,6 +9,7 @@ import {
   setActiveConfig,
   validateConfig,
 } from './core/config.js';
+import { validateGitVersion } from './core/git.js';
 import { runFirstRunSetup } from './ui/prompts.js';
 import type { AppConfig } from './types.js';
 import { ExitCode } from './types.js';
@@ -72,6 +73,8 @@ program.command('new [name]').description('Create a new workspace');
 program.command('open [name]').description('Open an existing workspace');
 program.command('edit <name>').description('Edit an existing workspace');
 program.command('delete <name>').description('Delete a workspace and its worktrees');
+
+await validateGitVersion();
 
 const setupOverrides = readSetupOverrides(process.argv);
 

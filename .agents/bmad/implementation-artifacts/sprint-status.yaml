@@ -54,7 +54,7 @@ development_status:
   epic-2: in-progress
   2-1-implement-origins-directory-scanner: review
   2-2-implement-workspace-persistence-layer: review
-  2-3-implement-git-worktree-creation: ready-for-dev
+  2-3-implement-git-worktree-creation: review
   2-4-implement-wh-new-interactive-workspace-creation: ready-for-dev
   2-5-implement-editor-launch: ready-for-dev
   epic-2-retrospective: optional

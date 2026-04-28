@@ -1,6 +1,6 @@
 # Story 2.3: Implement Git Worktree Creation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,30 +18,30 @@ so that I don't need to run `git worktree add` manually for each repository.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `validateGitVersion()` in `src/core/git.ts` (AC: #2)
-  - [ ] Use `simpleGit().version()` to get the installed git version
-  - [ ] Parse major.minor, compare to `2.5`
-  - [ ] Call `printError(...)` and `exitWithCode(ExitCode.ToolError)` if version < 2.5
+- [x] Task 1: Implement `validateGitVersion()` in `src/core/git.ts` (AC: #2)
+  - [x] Use `simpleGit().version()` to get the installed git version
+  - [x] Parse major.minor, compare to `2.5`
+  - [x] Call `printError(...)` and `exitWithCode(ExitCode.ToolError)` if version < 2.5
 
-- [ ] Task 2: Wire `validateGitVersion()` into `src/index.ts` (AC: #2)
-  - [ ] Call once at startup, before command dispatch
-  - [ ] Only run if git operations will be needed (i.e., always for this CLI)
+- [x] Task 2: Wire `validateGitVersion()` into `src/index.ts` (AC: #2)
+  - [x] Call once at startup, before command dispatch
+  - [x] Only run if git operations will be needed (i.e., always for this CLI)
 
-- [ ] Task 3: Implement `branchExists(repoPath, branch)` in `src/core/git.ts` (AC: #1)
-  - [ ] Use `simpleGit(repoPath).branch(['--list', branch])`
-  - [ ] Return `true` if branch is in the list
+- [x] Task 3: Implement `branchExists(repoPath, branch)` in `src/core/git.ts` (AC: #1)
+  - [x] Use `simpleGit(repoPath).branch(['--list', branch])`
+  - [x] Return `true` if branch is in the list
 
-- [ ] Task 4: Implement `createWorktree(repoPath, branch, worktreePath)` in `src/core/git.ts` (AC: #1, #3, #4)
-  - [ ] If branch does not exist: create it from HEAD with `simpleGit(repoPath).checkoutLocalBranch(branch)` then set branch back — or use `raw(['worktree', 'add', '-b', branch, worktreePath])` directly
-  - [ ] If branch exists: use `raw(['worktree', 'add', worktreePath, branch])`
-  - [ ] Throw descriptive error if `repoPath` is not a git repo (simple-git throws `GitError`)
-  - [ ] Throw descriptive error if `worktreePath` already exists
+- [x] Task 4: Implement `createWorktree(repoPath, branch, worktreePath)` in `src/core/git.ts` (AC: #1, #3, #4)
+  - [x] If branch does not exist: create it from HEAD with `simpleGit(repoPath).checkoutLocalBranch(branch)` then set branch back — or use `raw(['worktree', 'add', '-b', branch, worktreePath])` directly
+  - [x] If branch exists: use `raw(['worktree', 'add', worktreePath, branch])`
+  - [x] Throw descriptive error if `repoPath` is not a git repo (simple-git throws `GitError`)
+  - [x] Throw descriptive error if `worktreePath` already exists
 
-- [ ] Task 5: Write unit tests in `tests/unit/core/git.test.ts` (AC: #1, #3, #4)
-  - [ ] Test `branchExists` with a real git repo in tmpdir
-  - [ ] Test `createWorktree` creates worktree on disk
-  - [ ] Test `createWorktree` throws on non-git repo path
-  - [ ] Test `createWorktree` creates branch if it doesn't exist
+- [x] Task 5: Write unit tests in `tests/unit/core/git.test.ts` (AC: #1, #3, #4)
+  - [x] Test `branchExists` with a real git repo in tmpdir
+  - [x] Test `createWorktree` creates worktree on disk
+  - [x] Test `createWorktree` throws on non-git repo path
+  - [x] Test `createWorktree` creates branch if it doesn't exist
 
 ## Dev Notes
 
@@ -184,6 +184,24 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Red phase: `npm test -- --run tests/unit/core/git.test.ts` initially failed because `branchExists` and `createWorktree` were not implemented, then the temporary test repos exposed a global Git signing configuration that had to be neutralized with `git -c commit.gpgsign=false` for fixture commits.
+- Validation commands: `npm test -- --run tests/unit/core/git.test.ts`, `npm run build`, `npm test`.
+- Verified with ripgrep that `simple-git` is imported only from `src/core/git.ts`.
+
 ### Completion Notes List
 
+- Added `validateGitVersion`, `branchExists`, and `createWorktree` to `src/core/git.ts`, keeping all `simple-git` usage isolated in that one core module.
+- Wired Git version validation into CLI startup so unsupported git versions fail before command dispatch.
+- Extended Git integration tests to use real temporary repositories, covering existing branches, new-branch worktree creation, non-repo errors, and path conflicts.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/2-3-implement-git-worktree-creation.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/core/git.ts
+- src/index.ts
+- tests/unit/core/git.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented Git version validation and worktree creation helpers, then validated them with real temporary git repositories.
