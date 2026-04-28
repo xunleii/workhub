@@ -1,6 +1,6 @@
 # Story 1.2: Implement Cross-Cutting CLI Infrastructure
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -19,24 +19,24 @@ so that I can use it reliably in scripts and CI pipelines.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Complete `src/ui/output.ts` with all cross-cutting functions (AC: #1, #2, #3, #4, #5, #6)
-  - [ ] Implement `isTTY` constant (module-level, evaluated once at startup)
-  - [ ] Implement `exitWithCode(code: number): never`
-  - [ ] Implement `printError(message: string): void` — writes to `process.stderr`
-  - [ ] Implement `printSuccess(message: string): void` — writes to `process.stdout`
-  - [ ] Implement `printWarning(message: string): void` — writes to `process.stderr`
-  - [ ] Implement `printPreview(operations: Array<{ type: string; path: string }>): void` — formatted preview block to stdout
-  - [ ] Implement `printSafetyWarning(results: SafetyCheckResult[]): void` — formatted safety warning to stderr
+- [x] Task 1: Complete `src/ui/output.ts` with all cross-cutting functions (AC: #1, #2, #3, #4, #5, #6)
+  - [x] Implement `isTTY` constant (module-level, evaluated once at startup)
+  - [x] Implement `exitWithCode(code: number): never`
+  - [x] Implement `printError(message: string): void` — writes to `process.stderr`
+  - [x] Implement `printSuccess(message: string): void` — writes to `process.stdout`
+  - [x] Implement `printWarning(message: string): void` — writes to `process.stderr`
+  - [x] Implement `printPreview(operations: Array<{ type: string; path: string }>): void` — formatted preview block to stdout
+  - [x] Implement `printSafetyWarning(results: SafetyCheckResult[]): void` — formatted safety warning to stderr
 
-- [ ] Task 2: Write unit tests for `src/ui/output.ts` (AC: #1, #4, #5, #6)
-  - [ ] Test: `isTTY` is `false` when `process.env.NO_COLOR` is `'1'`
-  - [ ] Test: `printError` writes to stderr (spy on `process.stderr.write`)
-  - [ ] Test: `printSuccess` writes to stdout (spy on `process.stdout.write`)
-  - [ ] Test: `printPreview` formats operations correctly
-  - [ ] Test: `printSafetyWarning` formats safety results correctly
+- [x] Task 2: Write unit tests for `src/ui/output.ts` (AC: #1, #4, #5, #6)
+  - [x] Test: `isTTY` is `false` when `process.env.NO_COLOR` is `'1'`
+  - [x] Test: `printError` writes to stderr (spy on `process.stderr.write`)
+  - [x] Test: `printSuccess` writes to stdout (spy on `process.stdout.write`)
+  - [x] Test: `printPreview` formats operations correctly
+  - [x] Test: `printSafetyWarning` formats safety results correctly
 
-- [ ] Task 3: Verify no other file uses `process.stdout.isTTY` directly (AC: #6)
-  - [ ] Grep codebase for `isTTY` usage — must only appear in `src/ui/output.ts`
+- [x] Task 3: Verify no other file uses `process.stdout.isTTY` directly (AC: #6)
+  - [x] Grep codebase for `isTTY` usage — must only appear in `src/ui/output.ts`
 
 ## Dev Notes
 
@@ -186,6 +186,23 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Red phase: `npm test -- --run tests/unit/ui/output.test.ts` failed before implementation because `printError`, `printSuccess`, `printWarning`, `printPreview`, and `printSafetyWarning` were not exported yet.
+- Validation commands: `npm test -- --run tests/unit/ui/output.test.ts`, `npm run build`, `npm test`.
+- Verified direct `process.stdout.isTTY` usage with ripgrep; only `src/ui/output.ts` contains the expression.
+
 ### Completion Notes List
 
+- Completed `src/ui/output.ts` with stderr/stdout routing helpers, preview rendering, safety-warning rendering, and the exported `PreviewOperation` type.
+- Added focused unit coverage for `src/ui/output.ts`, including `process.exit` mocking, output stream routing, preview formatting, and safety-warning formatting.
+- Confirmed the TTY detection expression remains centralized in `src/ui/output.ts` and nowhere else in `src/`.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/1-2-implement-cross-cutting-cli-infrastructure.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/ui/output.ts
+- tests/unit/ui/output.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented the shared CLI output helpers, added unit tests for stream routing and formatting, and verified the centralized TTY detection rule.
