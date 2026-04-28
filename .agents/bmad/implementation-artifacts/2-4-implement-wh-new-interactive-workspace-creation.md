@@ -1,6 +1,6 @@
 # Story 2.4: Implement `wh new` — Interactive Workspace Creation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,28 +18,28 @@ so that I can set up my multi-repo working context without memorizing command sy
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add interactive prompts for `wh new` to `src/ui/prompts.ts` (AC: #1)
-  - [ ] `promptWorkspaceName(): Promise<string>` — `clack.text` with name format validation
-  - [ ] `promptRepoSelection(repos: OriginRepo[]): Promise<OriginRepo[]>` — `clack.multiselect` for repo picks
-  - [ ] `promptBranchName(defaultBranch?: string): Promise<string>` — `clack.text` with non-empty validation
-  - [ ] Each prompt checks `clack.isCancel()` and exits 1 if cancelled
+- [x] Task 1: Add interactive prompts for `wh new` to `src/ui/prompts.ts` (AC: #1)
+  - [x] `promptWorkspaceName(): Promise<string>` — `clack.text` with name format validation
+  - [x] `promptRepoSelection(repos: OriginRepo[]): Promise<OriginRepo[]>` — `clack.multiselect` for repo picks
+  - [x] `promptBranchName(defaultBranch?: string): Promise<string>` — `clack.text` with non-empty validation
+  - [x] Each prompt checks `clack.isCancel()` and exits 1 if cancelled
 
-- [ ] Task 2: Implement `src/commands/new.ts` — full Commander command (AC: #1, #2, #3, #4, #5)
-  - [ ] Define options: `--repo <name>` (multiple), `--branch <name>`, `--no-open` (skip editor)
-  - [ ] Collect inputs: use flags if provided; fall back to prompts when in TTY
-  - [ ] If non-TTY and required flags missing: exit 2 with error on stderr
-  - [ ] Validate workspace name is not already in use (call `listWorkspaces()`)
-  - [ ] Build `worktreePath` for each repo: `<repo.path>/../<workspace-name>-<repo.name>` (adjacent to repo, not inside it)
-  - [ ] Show preview of operations (call `printPreview`)
-  - [ ] Create worktrees sequentially (or concurrently) via `createWorktree`
-  - [ ] On any worktree creation failure: report error, do NOT call `saveWorkspace`, exit 2
-  - [ ] On full success: call `saveWorkspace`, then `openWorkspace` (Story 2.5)
-  - [ ] Register command in `src/index.ts` replacing the stub
+- [x] Task 2: Implement `src/commands/new.ts` — full Commander command (AC: #1, #2, #3, #4, #5)
+  - [x] Define options: `--repo <name>` (multiple), `--branch <name>`, `--no-open` (skip editor)
+  - [x] Collect inputs: use flags if provided; fall back to prompts when in TTY
+  - [x] If non-TTY and required flags missing: exit 2 with error on stderr
+  - [x] Validate workspace name is not already in use (call `listWorkspaces()`)
+  - [x] Build `worktreePath` for each repo: `<repo.path>/../<workspace-name>-<repo.name>` (adjacent to repo, not inside it)
+  - [x] Show preview of operations (call `printPreview`)
+  - [x] Create worktrees sequentially (or concurrently) via `createWorktree`
+  - [x] On any worktree creation failure: report error, do NOT call `saveWorkspace`, exit 2
+  - [x] On full success: call `saveWorkspace`, then `openWorkspace` (Story 2.5)
+  - [x] Register command in `src/index.ts` replacing the stub
 
-- [ ] Task 3: Write tests in `tests/unit/commands/new.test.ts` (AC: #2, #3, #4)
-  - [ ] Test: flag-only invocation creates expected workspace structure
-  - [ ] Test: duplicate name error before any filesystem operation
-  - [ ] Test: worktree failure → no workspace YAML written
+- [x] Task 3: Write tests in `tests/unit/commands/new.test.ts` (AC: #2, #3, #4)
+  - [x] Test: flag-only invocation creates expected workspace structure
+  - [x] Test: duplicate name error before any filesystem operation
+  - [x] Test: worktree failure → no workspace YAML written
 
 ## Dev Notes
 
@@ -203,6 +203,26 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Validation commands: `npm test -- --run tests/unit/commands/new.test.ts`, `npm run build`, `npm test`.
+- End-to-end validation: ran `node dist/index.js new ticket-1234 --repo repo-a --repo repo-b --branch feature/x` against temporary git repos and a fake editor binary, confirming adjacent worktree creation, workspace YAML persistence, preview output, and editor launch order.
+
 ### Completion Notes List
 
+- Added the `wh new` prompt helpers in `src/ui/prompts.ts` for workspace name, repo multiselect, and branch capture with cancellation handling.
+- Implemented the full `newCommand` flow in `src/commands/new.ts`, including flag/prompt fallback, duplicate-name protection, preview rendering, sequential worktree creation, fail-fast error handling, and success persistence.
+- Replaced the `new` stub registration in `src/index.ts` with the real Commander command.
+- Added the editor validation/open helpers in `src/core/workspace.ts` because successful `wh new` completion depends on immediate editor launch.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/2-4-implement-wh-new-interactive-workspace-creation.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/commands/new.ts
+- src/core/workspace.ts
+- src/index.ts
+- src/ui/prompts.ts
+- tests/unit/commands/new.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented the `wh new` flow with prompt/flag fallback, operation preview, workspace creation persistence, and end-to-end editor launch validation.

@@ -4,6 +4,7 @@ import * as clack from '@clack/prompts';
 
 import { ExitCode, type AppConfig } from '../types.js';
 import { exitWithCode, isTTY, printError } from './output.js';
+import type { OriginRepo } from '../types.js';
 
 function validateOriginsPath(origins: string | undefined): string | undefined {
   const trimmedOrigins = origins?.trim() ?? '';
@@ -77,4 +78,71 @@ export async function runFirstRunSetup(overrides?: {
     origins: (origins as string).trim(),
     editor: (editor as string).trim() || 'zed',
   };
+}
+
+export async function promptWorkspaceName(): Promise<string> {
+  const workspaceName = await clack.text({
+    message: 'Workspace name:',
+    validate: (value) => {
+      const trimmedValue = value?.trim() ?? '';
+
+      if (!trimmedValue) {
+        return 'Name is required';
+      }
+
+      if (!/^[a-zA-Z0-9-]+$/.test(trimmedValue)) {
+        return 'Use only letters, numbers, and hyphens';
+      }
+
+      return undefined;
+    },
+  });
+
+  if (clack.isCancel(workspaceName)) {
+    clack.cancel('Cancelled.');
+    exitWithCode(ExitCode.UserAbort);
+  }
+
+  return (workspaceName as string).trim();
+}
+
+export async function promptRepoSelection(repositories: OriginRepo[]): Promise<OriginRepo[]> {
+  const selectedRepositoryNames = await clack.multiselect({
+    message: 'Select repositories (Space to toggle, Enter to confirm):',
+    options: repositories.map((repository) => ({
+      value: repository.name,
+      label: repository.name,
+    })),
+    required: true,
+  });
+
+  if (clack.isCancel(selectedRepositoryNames)) {
+    clack.cancel('Cancelled.');
+    exitWithCode(ExitCode.UserAbort);
+  }
+
+  const selectedNames = selectedRepositoryNames as string[];
+
+  return repositories.filter((repository) => selectedNames.includes(repository.name));
+}
+
+export async function promptBranchName(defaultBranch = ''): Promise<string> {
+  const branchName = await clack.text({
+    message: 'Branch name:',
+    initialValue: defaultBranch,
+    validate: (value) => {
+      if (!(value?.trim() ?? '')) {
+        return 'Branch name is required';
+      }
+
+      return undefined;
+    },
+  });
+
+  if (clack.isCancel(branchName)) {
+    clack.cancel('Cancelled.');
+    exitWithCode(ExitCode.UserAbort);
+  }
+
+  return (branchName as string).trim();
 }
