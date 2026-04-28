@@ -1,12 +1,12 @@
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdir, readFile, readdir, rename, rm, unlink, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, readdir, rename, rm, unlink, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import yaml from 'js-yaml';
 
 import { ExitCode, type AppConfig } from '../types.js';
 import { resolveConfigPath } from './config.js';
-import type { WorkspaceConfig } from '../types.js';
+import type { WorkspaceConfig, WorkspaceSummary } from '../types.js';
 import { exitWithCode, printError } from '../ui/output.js';
 
 const VALID_WORKSPACE_NAME = /^[a-zA-Z0-9-]+$/;
@@ -70,6 +70,32 @@ export async function listWorkspaces(): Promise<string[]> {
   } catch {
     return [];
   }
+}
+
+export async function listWorkspaceSummaries(): Promise<WorkspaceSummary[]> {
+  const workspaceNames = await listWorkspaces();
+  const summaries = await Promise.all(
+    workspaceNames.map(async (name) => {
+      const workspace = await loadWorkspace(name);
+      const staleChecks = await Promise.all(
+        workspace.paths.map(async (workspacePath) => {
+          try {
+            await access(workspacePath.path);
+            return false;
+          } catch {
+            return true;
+          }
+        }),
+      );
+
+      return {
+        name,
+        staleCount: staleChecks.filter(Boolean).length,
+      };
+    }),
+  );
+
+  return summaries.sort((left, right) => left.name.localeCompare(right.name));
 }
 
 export async function deleteWorkspace(name: string): Promise<void> {

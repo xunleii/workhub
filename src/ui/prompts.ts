@@ -4,7 +4,7 @@ import * as clack from '@clack/prompts';
 
 import { ExitCode, type AppConfig } from '../types.js';
 import { exitWithCode, isTTY, printError } from './output.js';
-import type { OriginRepo } from '../types.js';
+import type { OriginRepo, WorkspaceSummary } from '../types.js';
 
 function validateOriginsPath(origins: string | undefined): string | undefined {
   const trimmedOrigins = origins?.trim() ?? '';
@@ -145,4 +145,21 @@ export async function promptBranchName(defaultBranch = ''): Promise<string> {
   }
 
   return (branchName as string).trim();
+}
+
+export async function promptWorkspaceSelect(summaries: WorkspaceSummary[]): Promise<string> {
+  const selectedWorkspace = await clack.select({
+    message: 'Select a workspace to open:',
+    options: summaries.map((summary) => ({
+      value: summary.name,
+      label: summary.staleCount > 0 ? `${summary.name} [${summary.staleCount} stale]` : summary.name,
+    })),
+  });
+
+  if (clack.isCancel(selectedWorkspace)) {
+    clack.cancel('Cancelled.');
+    exitWithCode(ExitCode.UserAbort);
+  }
+
+  return selectedWorkspace as string;
 }

@@ -21,6 +21,11 @@ export interface OriginRepo {
   path: string;
 }
 
+export interface WorkspaceSummary {
+  name: string;
+  staleCount: number;
+}
+
 export enum ExitCode {
   Success = 0,
   UserAbort = 1,

@@ -1,4 +1,4 @@
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
@@ -164,5 +164,54 @@ describe('src/core/workspace', () => {
     expect(() => validateEditorBinary('missing-editor')).toThrow('exit:2');
     expect(printError).toHaveBeenCalledWith('editor not found in PATH: missing-editor');
     expect(exitWithCode).toHaveBeenCalledWith(2);
+  });
+
+  it('listWorkspaceSummaries marks stale paths that no longer exist', async () => {
+    const stalePath = join(testDirectory, 'missing-worktree');
+    const validPath = join(testDirectory, 'existing-worktree');
+    await mkdir(validPath, { recursive: true });
+
+    const { listWorkspaceSummaries, saveWorkspace } = await import('../../../src/core/workspace.js');
+
+    await saveWorkspace({
+      ...baseWorkspaceConfig,
+      name: 'stale-workspace',
+      paths: [
+        { repo: 'repo-a', path: validPath },
+        { repo: 'repo-b', path: stalePath },
+      ],
+    });
+
+    await expect(listWorkspaceSummaries()).resolves.toEqual([
+      { name: 'stale-workspace', staleCount: 1 },
+    ]);
+  });
+
+  it('listWorkspaceSummaries reports zero stale paths for valid workspaces', async () => {
+    const firstPath = join(testDirectory, 'worktree-a');
+    const secondPath = join(testDirectory, 'worktree-b');
+    await mkdir(firstPath, { recursive: true });
+    await mkdir(secondPath, { recursive: true });
+
+    const { listWorkspaceSummaries, saveWorkspace } = await import('../../../src/core/workspace.js');
+
+    await saveWorkspace({
+      ...baseWorkspaceConfig,
+      name: 'healthy-workspace',
+      paths: [
+        { repo: 'repo-a', path: firstPath },
+        { repo: 'repo-b', path: secondPath },
+      ],
+    });
+
+    await expect(listWorkspaceSummaries()).resolves.toEqual([
+      { name: 'healthy-workspace', staleCount: 0 },
+    ]);
+  });
+
+  it('listWorkspaceSummaries returns empty array when no workspaces exist', async () => {
+    const { listWorkspaceSummaries } = await import('../../../src/core/workspace.js');
+
+    await expect(listWorkspaceSummaries()).resolves.toEqual([]);
   });
 });

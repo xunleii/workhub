@@ -1,6 +1,6 @@
 # Story 3.1: Implement Workspace Listing and Stale Path Detection
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -16,26 +16,26 @@ so that I can make informed decisions before opening or editing them.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `WorkspaceSummary` type to `src/types.ts` (AC: #1)
-  - [ ] `export interface WorkspaceSummary { name: string; staleCount: number; }`
+- [x] Task 1: Add `WorkspaceSummary` type to `src/types.ts` (AC: #1)
+  - [x] `export interface WorkspaceSummary { name: string; staleCount: number; }`
 
-- [ ] Task 2: Implement `listWorkspaceSummaries()` in `src/core/workspace.ts` (AC: #1)
-  - [ ] Call existing `listWorkspaces()` to get names
-  - [ ] For each name, `loadWorkspace(name)` then check each path with `access()`
-  - [ ] Count stale paths (those where `access()` throws ENOENT)
-  - [ ] Return `WorkspaceSummary[]` sorted by name
-  - [ ] Run path checks concurrently per workspace with `Promise.all`
+- [x] Task 2: Implement `listWorkspaceSummaries()` in `src/core/workspace.ts` (AC: #1)
+  - [x] Call existing `listWorkspaces()` to get names
+  - [x] For each name, `loadWorkspace(name)` then check each path with `access()`
+  - [x] Count stale paths (those where `access()` throws ENOENT)
+  - [x] Return `WorkspaceSummary[]` sorted by name
+  - [x] Run path checks concurrently per workspace with `Promise.all`
 
-- [ ] Task 3: Add `promptWorkspaceSelect(summaries: WorkspaceSummary[])` to `src/ui/prompts.ts` (AC: #2, #3)
-  - [ ] Use `clack.select` to show workspace list
-  - [ ] Label format: `'ticket-1234'` or `'ticket-1234 [2 stale]'` if staleCount > 0
-  - [ ] Check `clack.isCancel()` and exit 1 if cancelled
-  - [ ] Called by `wh open` command (Story 3.2)
+- [x] Task 3: Add `promptWorkspaceSelect(summaries: WorkspaceSummary[])` to `src/ui/prompts.ts` (AC: #2, #3)
+  - [x] Use `clack.select` to show workspace list
+  - [x] Label format: `'ticket-1234'` or `'ticket-1234 [2 stale]'` if staleCount > 0
+  - [x] Check `clack.isCancel()` and exit 1 if cancelled
+  - [x] Called by `wh open` command (Story 3.2)
 
-- [ ] Task 4: Write unit tests in `tests/unit/core/workspace.test.ts` (AC: #1)
-  - [ ] Test: stale detection marks paths that no longer exist
-  - [ ] Test: non-stale paths not marked
-  - [ ] Test: returns empty array when no workspaces
+- [x] Task 4: Write unit tests in `tests/unit/core/workspace.test.ts` (AC: #1)
+  - [x] Test: stale detection marks paths that no longer exist
+  - [x] Test: non-stale paths not marked
+  - [x] Test: returns empty array when no workspaces
 
 ## Dev Notes
 
@@ -139,6 +139,24 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Red phase: `npm test -- --run tests/unit/core/workspace.test.ts` initially failed because `listWorkspaceSummaries()` was missing, then a follow-up fix imported `access()` into `src/core/workspace.ts` after the stale-count tests revealed all paths were being treated as stale.
+- Validation commands: `npm test -- --run tests/unit/core/workspace.test.ts`, `npm run build`, `npm test`.
+
 ### Completion Notes List
 
+- Added the shared `WorkspaceSummary` type and implemented `listWorkspaceSummaries()` with concurrent stale-path checks in `src/core/workspace.ts`.
+- Added `promptWorkspaceSelect()` in `src/ui/prompts.ts` so the upcoming `wh open` flow can present stale-path indicators without blocking selection.
+- Expanded workspace-core tests to cover stale detection, healthy workspaces, and the empty-workspace case.
+
 ### File List
+
+- .agents/bmad/implementation-artifacts/3-1-implement-workspace-listing-and-stale-path-detection.md
+- .agents/bmad/implementation-artifacts/sprint-status.yaml
+- src/core/workspace.ts
+- src/types.ts
+- src/ui/prompts.ts
+- tests/unit/core/workspace.test.ts
+
+## Change Log
+
+- 2026-04-28: Implemented workspace summary listing with stale-path detection and added the selection prompt support for `wh open`.
