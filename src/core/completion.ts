@@ -257,21 +257,21 @@ complete -c wh -n '__fish_use_subcommand' -a 'new open edit delete completion he
 complete -c wh -l help -d 'Show help'
 complete -c wh -l version -d 'Show version'
 complete -c wh -l origins -r -a '(__fish_complete_directories)' -d 'Origins directory'
-complete -c wh -l editor -r -a '(__fish_complete_command)' -d 'Editor binary'
+complete -c wh -l editor -x -a '(__fish_complete_command)' -d 'Editor binary'
 
-complete -c wh -n '__fish_seen_subcommand_from new' -l repo -r -a '(__wh_repositories)' -d 'Repository to include'
-complete -c wh -n '__fish_seen_subcommand_from new' -l branch -r -d 'Branch name'
+complete -c wh -n '__fish_seen_subcommand_from new' -l repo -x -a '(__wh_repositories)' -d 'Repository to include'
+complete -c wh -n '__fish_seen_subcommand_from new' -l branch -x -d 'Branch name'
 complete -c wh -n '__fish_seen_subcommand_from new' -l no-open -d 'Skip opening in editor'
 
-complete -c wh -n '__fish_seen_subcommand_from open' -a '(__wh_workspaces)' -d 'Workspace name'
+complete -c wh -n '__fish_seen_subcommand_from open; and __fish_is_nth_token 3' -a '(__wh_workspaces)' -d 'Workspace name'
 complete -c wh -n '__fish_seen_subcommand_from open' -l status -d 'Show workspace status'
 
-complete -c wh -n '__fish_seen_subcommand_from edit' -a '(__wh_workspaces)' -d 'Workspace name'
-complete -c wh -n '__fish_seen_subcommand_from edit' -l add -r -a '(__wh_repositories)' -d 'Repository to add'
-complete -c wh -n '__fish_seen_subcommand_from edit' -l remove -r -a '(__wh_workspace_repositories)' -d 'Repository to remove'
-complete -c wh -n '__fish_seen_subcommand_from edit' -l branch -r -d 'Branch name'
+complete -c wh -n '__fish_seen_subcommand_from edit; and __fish_is_nth_token 3' -a '(__wh_workspaces)' -d 'Workspace name'
+complete -c wh -n '__fish_seen_subcommand_from edit' -l add -x -a '(__wh_repositories)' -d 'Repository to add'
+complete -c wh -n '__fish_seen_subcommand_from edit' -l remove -x -a '(__wh_workspace_repositories)' -d 'Repository to remove'
+complete -c wh -n '__fish_seen_subcommand_from edit' -l branch -x -d 'Branch name'
 
-complete -c wh -n '__fish_seen_subcommand_from delete' -a '(__wh_workspaces)' -d 'Workspace name'
+complete -c wh -n '__fish_seen_subcommand_from delete; and __fish_is_nth_token 3' -a '(__wh_workspaces)' -d 'Workspace name'
 complete -c wh -n '__fish_seen_subcommand_from delete' -l force -d 'Skip confirmation when safe'
 
 complete -c wh -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish' -d 'Shell name'
