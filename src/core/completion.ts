@@ -108,13 +108,18 @@ _wh_complete() {
   fi
 
   if [[ $COMP_CWORD -eq 1 ]]; then
-    COMPREPLY=( $(compgen -W "new list open edit delete completion help --help --version --origins --editor" -- "$cur") )
+    COMPREPLY=( $(compgen -W "new list cd open edit delete completion help --help --version --origins --editor" -- "$cur") )
     return
   fi
 
   case "$subcommand" in
     new)
       COMPREPLY=( $(compgen -W "--repo --branch --no-open --help" -- "$cur") )
+      ;;
+    cd)
+      if [[ $COMP_CWORD -eq 2 && "$cur" != -* ]]; then
+        _wh_filter_prefix _wh_workspaces "$cur"
+      fi
       ;;
     open)
       if [[ $COMP_CWORD -eq 2 && "$cur" != -* ]]; then
@@ -147,6 +152,9 @@ _wh_complete() {
 }
 
 complete -F _wh_complete wh
+
+# Shell wrapper — add to your ~/.bashrc or ~/.bash_profile:
+# wcd() { local _p; _p="$(wh cd "$@")" && cd "$_p"; }
 `;
     case 'zsh':
       return `#compdef wh
@@ -194,7 +202,7 @@ _wh() {
     '--version[show version]' \\
     '--origins=[origins directory]:directory:_files -/' \\
     '--editor=[editor binary]:editor:_command_names' \\
-    '1:command:(new list open edit delete completion help)' \\
+    '1:command:(new list cd open edit delete completion help)' \\
     '*::arg:->args'
 
   case $state in
@@ -206,6 +214,11 @@ _wh() {
             '--repo=[repository to include]:repository:_wh_repositories' \\
             '--branch=[branch name]:branch:_wh_branches' \\
             '--no-open[skip opening in editor]'
+          ;;
+        cd)
+          if (( CURRENT == 3 )) && [[ $words[CURRENT] != -* ]]; then
+            _wh_workspaces
+          fi
           ;;
         open)
           if (( CURRENT == 3 )) && [[ $words[CURRENT] != -* ]]; then
@@ -240,6 +253,9 @@ _wh() {
 }
 
 _wh "$@"
+
+# Shell wrapper — add to your ~/.zshrc:
+# wcd() { local _p; _p="$(wh cd "$@")" && cd "$_p"; }
 `;
     case 'fish':
       return `function __wh_workspaces
@@ -281,7 +297,7 @@ function __wh_branches
 end
 
 complete -c wh -f
-complete -c wh -n '__fish_use_subcommand' -a 'new list open edit delete completion help'
+complete -c wh -n '__fish_use_subcommand' -a 'new list cd open edit delete completion help'
 complete -c wh -l help -d 'Show help'
 complete -c wh -l version -d 'Show version'
 complete -c wh -l origins -r -a '(__fish_complete_directories)' -d 'Origins directory'
@@ -290,6 +306,8 @@ complete -c wh -l editor -x -a '(__fish_complete_command)' -d 'Editor binary'
 complete -c wh -n '__fish_seen_subcommand_from new' -l repo -x -a '(__wh_repositories)' -d 'Repository to include'
 complete -c wh -n '__fish_seen_subcommand_from new' -l branch -x -a '(__wh_branches)' -d 'Branch name'
 complete -c wh -n '__fish_seen_subcommand_from new' -l no-open -d 'Skip opening in editor'
+
+complete -c wh -n '__fish_seen_subcommand_from cd; and __fish_is_nth_token 2' -a '(__wh_workspaces)' -d 'Workspace name'
 
 complete -c wh -n '__fish_seen_subcommand_from open; and __fish_is_nth_token 2' -a '(__wh_workspaces)' -d 'Workspace name'
 complete -c wh -n '__fish_seen_subcommand_from open' -l status -d 'Show workspace status'
@@ -303,6 +321,9 @@ complete -c wh -n '__fish_seen_subcommand_from delete; and __fish_is_nth_token 2
 complete -c wh -n '__fish_seen_subcommand_from delete' -l force -d 'Skip confirmation when safe'
 
 complete -c wh -n '__fish_seen_subcommand_from completion' -a 'bash zsh fish' -d 'Shell name'
+
+# Shell wrapper — add to your config.fish:
+# function wcd; cd (wh cd $argv); end
 `;
     default:
       throw new Error(`Unsupported shell: ${shell satisfies never}`);

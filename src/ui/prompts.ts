@@ -273,11 +273,15 @@ export async function runDestructiveFlow(options: {
  * Prompts for a workspace from a summarized interactive list.
  *
  * @param summaries - Workspace summaries to render in the selector.
+ * @param message - Prompt message shown above the list.
  * @returns The selected workspace name.
  */
-export async function promptWorkspaceSelect(summaries: WorkspaceSummary[]): Promise<string> {
+export async function promptWorkspaceSelect(
+  summaries: WorkspaceSummary[],
+  message = 'Select a workspace:',
+): Promise<string> {
   const selectedWorkspace = await clack.select({
-    message: 'Select a workspace to open:',
+    message,
     options: summaries.map((summary) => ({
       value: summary.name,
       label: summary.staleCount > 0 ? `${summary.name} [${summary.staleCount} stale]` : summary.name,
@@ -290,4 +294,24 @@ export async function promptWorkspaceSelect(summaries: WorkspaceSummary[]): Prom
   }
 
   return selectedWorkspace as string;
+}
+
+/**
+ * Prompts for a repository within a workspace.
+ *
+ * @param paths - Available repository/path pairs in the workspace.
+ * @returns The selected path on disk.
+ */
+export async function promptRepoSelect(paths: Array<{ repo: string; path: string }>): Promise<string> {
+  const selected = await clack.select({
+    message: 'Select a repository:',
+    options: paths.map((entry) => ({ value: entry.path, label: entry.repo, hint: entry.path })),
+  });
+
+  if (clack.isCancel(selected)) {
+    clack.cancel('Cancelled.');
+    exitWithCode(ExitCode.UserAbort);
+  }
+
+  return selected as string;
 }

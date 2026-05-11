@@ -2,6 +2,7 @@
 import { createRequire } from 'module';
 import { Command } from 'commander';
 
+import { cdCommand } from './commands/cd.js';
 import { completionCommand } from './commands/completion.js';
 import { deleteCommand } from './commands/delete.js';
 import { editCommand } from './commands/edit.js';
@@ -100,6 +101,7 @@ program.option('--editor <name>', 'editor binary (overrides config)');
 
 program.addCommand(newCommand);
 program.addCommand(listCommand);
+program.addCommand(cdCommand);
 program.addCommand(openCommand);
 program.addCommand(editCommand);
 program.addCommand(deleteCommand);
