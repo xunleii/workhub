@@ -56,7 +56,7 @@ _wh_complete() {
   subcommand_index=0
   for (( index = 1; index < COMP_CWORD; index++ )); do
     case "\${COMP_WORDS[index]}" in
-      new|open|edit|delete|completion|help)
+      new|list|open|edit|delete|completion|help)
         subcommand="\${COMP_WORDS[index]}"
         subcommand_index=$index
         break
@@ -108,7 +108,7 @@ _wh_complete() {
   fi
 
   if [[ $COMP_CWORD -eq 1 ]]; then
-    COMPREPLY=( $(compgen -W "new open edit delete completion help --help --version --origins --editor" -- "$cur") )
+    COMPREPLY=( $(compgen -W "new list open edit delete completion help --help --version --origins --editor" -- "$cur") )
     return
   fi
 
@@ -194,7 +194,7 @@ _wh() {
     '--version[show version]' \\
     '--origins=[origins directory]:directory:_files -/' \\
     '--editor=[editor binary]:editor:_command_names' \\
-    '1:command:(new open edit delete completion help)' \\
+    '1:command:(new list open edit delete completion help)' \\
     '*::arg:->args'
 
   case $state in
@@ -281,7 +281,7 @@ function __wh_branches
 end
 
 complete -c wh -f
-complete -c wh -n '__fish_use_subcommand' -a 'new open edit delete completion help'
+complete -c wh -n '__fish_use_subcommand' -a 'new list open edit delete completion help'
 complete -c wh -l help -d 'Show help'
 complete -c wh -l version -d 'Show version'
 complete -c wh -l origins -r -a '(__fish_complete_directories)' -d 'Origins directory'

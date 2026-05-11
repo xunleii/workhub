@@ -6,6 +6,7 @@ import { completionCommand } from './commands/completion.js';
 import { deleteCommand } from './commands/delete.js';
 import { editCommand } from './commands/edit.js';
 import { internalCompleteCommand } from './commands/internal-complete.js';
+import { listCommand } from './commands/list.js';
 import { newCommand } from './commands/new.js';
 import { openCommand } from './commands/open.js';
 import {
@@ -98,6 +99,7 @@ program.option('--origins <path>', 'origins directory (overrides config)');
 program.option('--editor <name>', 'editor binary (overrides config)');
 
 program.addCommand(newCommand);
+program.addCommand(listCommand);
 program.addCommand(openCommand);
 program.addCommand(editCommand);
 program.addCommand(deleteCommand);
