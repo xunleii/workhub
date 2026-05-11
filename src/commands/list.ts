@@ -25,13 +25,15 @@ export const listCommand = new Command('list')
       process.stdout.write(`${'NAME'.padEnd(nameWidth)}  ${'BRANCH'.padEnd(branchWidth)}  REPOS\n`);
 
       for (const workspace of workspaces) {
+        const repos = workspace.paths.map((entry) => entry.repo).join(', ');
         process.stdout.write(
-          `${workspace.name.padEnd(nameWidth)}  ${workspace.branch.padEnd(branchWidth)}  ${workspace.paths.length}\n`,
+          `${workspace.name.padEnd(nameWidth)}  ${workspace.branch.padEnd(branchWidth)}  ${repos}\n`,
         );
       }
     } else {
       for (const workspace of workspaces) {
-        process.stdout.write(`${workspace.name}\t${workspace.branch}\t${workspace.paths.length}\n`);
+        const repos = workspace.paths.map((entry) => entry.repo).join(',');
+        process.stdout.write(`${workspace.name}\t${workspace.branch}\t${repos}\n`);
       }
     }
   });

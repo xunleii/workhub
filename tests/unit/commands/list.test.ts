@@ -62,8 +62,8 @@ describe('src/commands/list', () => {
 
     const output = mocks.stdoutWrite.mock.calls.map((call) => call[0]).join('');
 
-    expect(output).toContain('ticket-1234\tfeature/x\t1\n');
-    expect(output).toContain('my-fix\tfix/y\t2\n');
+    expect(output).toContain('ticket-1234\tfeature/x\trepo-a\n');
+    expect(output).toContain('my-fix\tfix/y\trepo-a,repo-b\n');
   });
 
   it('outputs a formatted table with header in TTY mode', async () => {
@@ -83,7 +83,7 @@ describe('src/commands/list', () => {
     expect(output).toContain('REPOS');
     expect(output).toContain('ticket-1234');
     expect(output).toContain('feature/x');
-    expect(output).toContain('1');
+    expect(output).toContain('repo-a');
   });
 
   it('column widths adapt to the longest name and branch in TTY mode', async () => {
