@@ -32,6 +32,21 @@ _wh_workspace_repositories() {
   command wh __complete workspace-repos "$workspace_name" 2>/dev/null
 }
 
+_wh_branches() {
+  command wh __complete branches 2>/dev/null
+}
+
+# Reads lines from a source function and populates COMPREPLY with prefix matches.
+# Handles names that contain spaces or other special characters safely.
+_wh_filter_prefix() {
+  local _src_fn="$1" _cur="$2"
+  compopt +o default +o bashdefault 2>/dev/null
+  COMPREPLY=()
+  while IFS= read -r _item; do
+    [[ "$_item" == "$_cur"* ]] && COMPREPLY+=("$_item")
+  done < <("$_src_fn" "\${@:3}")
+}
+
 _wh_complete() {
   local cur prev subcommand subcommand_index workspace_index workspace_name
   cur="\${COMP_WORDS[COMP_CWORD]}"
@@ -64,18 +79,19 @@ _wh_complete() {
       return
       ;;
     --repo)
-      compopt +o default +o bashdefault 2>/dev/null
-      COMPREPLY=( $(compgen -W "$(_wh_repositories)" -- "$cur") )
+      _wh_filter_prefix _wh_repositories "$cur"
       return
       ;;
     --add)
-      compopt +o default +o bashdefault 2>/dev/null
-      COMPREPLY=( $(compgen -W "$(_wh_repositories)" -- "$cur") )
+      _wh_filter_prefix _wh_repositories "$cur"
       return
       ;;
     --remove)
-      compopt +o default +o bashdefault 2>/dev/null
-      COMPREPLY=( $(compgen -W "$(_wh_workspace_repositories "$workspace_name")" -- "$cur") )
+      _wh_filter_prefix _wh_workspace_repositories "$cur" "$workspace_name"
+      return
+      ;;
+    --branch)
+      _wh_filter_prefix _wh_branches "$cur"
       return
       ;;
     completion)
@@ -102,21 +118,21 @@ _wh_complete() {
       ;;
     open)
       if [[ $COMP_CWORD -eq 2 && "$cur" != -* ]]; then
-        COMPREPLY=( $(compgen -W "$(_wh_workspaces)" -- "$cur") )
+        _wh_filter_prefix _wh_workspaces "$cur"
       else
         COMPREPLY=( $(compgen -W "--status --help" -- "$cur") )
       fi
       ;;
     edit)
       if [[ $COMP_CWORD -eq 2 && "$cur" != -* ]]; then
-        COMPREPLY=( $(compgen -W "$(_wh_workspaces)" -- "$cur") )
+        _wh_filter_prefix _wh_workspaces "$cur"
       else
         COMPREPLY=( $(compgen -W "--add --remove --branch --help" -- "$cur") )
       fi
       ;;
     delete)
       if [[ $COMP_CWORD -eq 2 && "$cur" != -* ]]; then
-        COMPREPLY=( $(compgen -W "$(_wh_workspaces)" -- "$cur") )
+        _wh_filter_prefix _wh_workspaces "$cur"
       else
         COMPREPLY=( $(compgen -W "--force --help" -- "$cur") )
       fi
@@ -161,6 +177,14 @@ _wh_workspace_repositories() {
   compadd -a repositories
 }
 
+_wh_branches() {
+  local -a branches
+
+  branches=("\${(@f)$(wh __complete branches 2>/dev/null)}")
+
+  compadd -a branches
+}
+
 _wh() {
   local context state line
   typeset -A opt_args
@@ -180,7 +204,7 @@ _wh() {
           _arguments \\
             '1:workspace name:' \\
             '--repo=[repository to include]:repository:_wh_repositories' \\
-            '--branch=[branch name]:' \\
+            '--branch=[branch name]:branch:_wh_branches' \\
             '--no-open[skip opening in editor]'
           ;;
         open)
@@ -197,7 +221,7 @@ _wh() {
             _arguments \\
               '--add=[repository to add]:repository:_wh_repositories' \\
               '--remove=[repository to remove]:repository:_wh_workspace_repositories' \\
-              '--branch=[branch name]:'
+              '--branch=[branch name]:branch:_wh_branches'
           fi
           ;;
         delete)
@@ -252,6 +276,10 @@ function __wh_workspace_repositories
     end
 end
 
+function __wh_branches
+    command wh __complete branches 2>/dev/null
+end
+
 complete -c wh -f
 complete -c wh -n '__fish_use_subcommand' -a 'new open edit delete completion help'
 complete -c wh -l help -d 'Show help'
@@ -260,7 +288,7 @@ complete -c wh -l origins -r -a '(__fish_complete_directories)' -d 'Origins dire
 complete -c wh -l editor -x -a '(__fish_complete_command)' -d 'Editor binary'
 
 complete -c wh -n '__fish_seen_subcommand_from new' -l repo -x -a '(__wh_repositories)' -d 'Repository to include'
-complete -c wh -n '__fish_seen_subcommand_from new' -l branch -x -d 'Branch name'
+complete -c wh -n '__fish_seen_subcommand_from new' -l branch -x -a '(__wh_branches)' -d 'Branch name'
 complete -c wh -n '__fish_seen_subcommand_from new' -l no-open -d 'Skip opening in editor'
 
 complete -c wh -n '__fish_seen_subcommand_from open; and __fish_is_nth_token 2' -a '(__wh_workspaces)' -d 'Workspace name'
@@ -269,7 +297,7 @@ complete -c wh -n '__fish_seen_subcommand_from open' -l status -d 'Show workspac
 complete -c wh -n '__fish_seen_subcommand_from edit; and __fish_is_nth_token 2' -a '(__wh_workspaces)' -d 'Workspace name'
 complete -c wh -n '__fish_seen_subcommand_from edit' -l add -x -a '(__wh_repositories)' -d 'Repository to add'
 complete -c wh -n '__fish_seen_subcommand_from edit' -l remove -x -a '(__wh_workspace_repositories)' -d 'Repository to remove'
-complete -c wh -n '__fish_seen_subcommand_from edit' -l branch -x -d 'Branch name'
+complete -c wh -n '__fish_seen_subcommand_from edit' -l branch -x -a '(__wh_branches)' -d 'Branch name'
 
 complete -c wh -n '__fish_seen_subcommand_from delete; and __fish_is_nth_token 2' -a '(__wh_workspaces)' -d 'Workspace name'
 complete -c wh -n '__fish_seen_subcommand_from delete' -l force -d 'Skip confirmation when safe'

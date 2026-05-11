@@ -12,6 +12,9 @@ describe('src/core/completion', () => {
     expect(script).toContain('command wh __complete repos');
     expect(script).toContain('command wh __complete workspace-repos');
     expect(script).toContain('compopt +o default +o bashdefault');
+    expect(script).toContain('_wh_filter_prefix');
+    expect(script).toContain('_wh_filter_prefix _wh_workspaces');
+    expect(script).toContain('_wh_filter_prefix _wh_branches');
   });
 
   it('renders zsh completion with _files directory completion', () => {

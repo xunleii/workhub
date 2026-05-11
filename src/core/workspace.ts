@@ -9,18 +9,17 @@ import { resolveConfigPath } from './config.js';
 import type { WorkspaceConfig, WorkspaceSummary } from '../types.js';
 import { exitWithCode, printError } from '../ui/output.js';
 
-const VALID_WORKSPACE_NAME = /^[a-zA-Z0-9-]+$/;
-
 /**
- * Ensures workspace names stay compatible with on-disk file naming.
+ * Converts a display workspace name into a filesystem-safe filename stem.
  *
- * @param name - Candidate workspace name.
- * @throws {Error} When the name contains unsupported characters.
+ * Any character outside `[a-zA-Z0-9._-]` (e.g. spaces, slashes) is replaced
+ * by an underscore so the result is safe as a directory name and YAML filename.
+ *
+ * @param name - Display workspace name (may contain spaces, slashes, etc.).
+ * @returns Filesystem-safe equivalent.
  */
-function validateWorkspaceName(name: string): void {
-  if (!VALID_WORKSPACE_NAME.test(name)) {
-    throw new Error(`Invalid workspace name: "${name}". Use only alphanumeric characters and hyphens.`);
-  }
+export function sanitizeWorkspaceName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
 /**
@@ -40,7 +39,7 @@ export function resolveWorkspacesDir(): string {
  * @returns Absolute path of the derived worktree location inside the repository Git metadata.
  */
 export function buildWorktreePath(repoPath: string, workspaceName: string): string {
-  return join(repoPath, '.git', 'worktrees', workspaceName, basename(repoPath));
+  return join(repoPath, '.git', 'worktrees', sanitizeWorkspaceName(workspaceName), basename(repoPath));
 }
 
 /**
@@ -49,14 +48,12 @@ export function buildWorktreePath(repoPath: string, workspaceName: string): stri
  * @param config - Workspace configuration to serialize.
  */
 export async function saveWorkspace(config: WorkspaceConfig): Promise<void> {
-  validateWorkspaceName(config.name);
-
   const workspacesDirectory = resolveWorkspacesDir();
   const finalConfig: WorkspaceConfig = {
     ...config,
     created_at: config.created_at || new Date().toISOString(),
   };
-  const workspacePath = join(workspacesDirectory, `${config.name}.yaml`);
+  const workspacePath = join(workspacesDirectory, `${sanitizeWorkspaceName(config.name)}.yaml`);
   const temporaryWorkspacePath = `${workspacePath}.tmp`;
 
   await mkdir(workspacesDirectory, { recursive: true });
@@ -83,7 +80,7 @@ export async function saveWorkspace(config: WorkspaceConfig): Promise<void> {
  * @throws {Error} When the workspace manifest cannot be read.
  */
 export async function loadWorkspace(name: string): Promise<WorkspaceConfig> {
-  const workspacePath = join(resolveWorkspacesDir(), `${name}.yaml`);
+  const workspacePath = join(resolveWorkspacesDir(), `${sanitizeWorkspaceName(name)}.yaml`);
 
   try {
     const rawWorkspace = await readFile(workspacePath, 'utf8');
@@ -94,17 +91,32 @@ export async function loadWorkspace(name: string): Promise<WorkspaceConfig> {
 }
 
 /**
- * Lists saved workspaces, sorted by name.
+ * Lists saved workspaces, sorted by display name.
  *
- * @returns Workspace names discovered in the manifest directory.
+ * Each YAML manifest is read to retrieve the original display name, which may
+ * differ from the sanitized filename when the name contains spaces or slashes.
+ *
+ * @returns Display workspace names discovered in the manifest directory.
  */
 export async function listWorkspaces(): Promise<string[]> {
   try {
-    const entries = await readdir(resolveWorkspacesDir());
+    const workspacesDirectory = resolveWorkspacesDir();
+    const entries = await readdir(workspacesDirectory);
+    const names = await Promise.all(
+      entries
+        .filter((entry) => entry.endsWith('.yaml') && !entry.endsWith('.yaml.tmp'))
+        .map(async (entry) => {
+          try {
+            const raw = await readFile(join(workspacesDirectory, entry), 'utf8');
+            return (yaml.load(raw) as WorkspaceConfig).name;
+          } catch {
+            return null;
+          }
+        }),
+    );
 
-    return entries
-      .filter((entry) => entry.endsWith('.yaml'))
-      .map((entry) => entry.slice(0, -5))
+    return names
+      .filter((n): n is string => n !== null)
       .sort((left, right) => left.localeCompare(right));
   } catch {
     return [];
@@ -186,7 +198,7 @@ export async function listWorkspaceSummaries(): Promise<WorkspaceSummary[]> {
  * @throws {Error} When the workspace manifest does not exist.
  */
 export async function deleteWorkspace(name: string): Promise<void> {
-  const workspacePath = join(resolveWorkspacesDir(), `${name}.yaml`);
+  const workspacePath = join(resolveWorkspacesDir(), `${sanitizeWorkspaceName(name)}.yaml`);
 
   try {
     await rm(workspacePath);

@@ -117,6 +117,37 @@ export async function branchExists(repoPath: string, branch: string): Promise<bo
 }
 
 /**
+ * Lists all local branches in a repository.
+ *
+ * @param repoPath - Path to the base repository.
+ * @returns Local branch names.
+ */
+export async function listLocalBranches(repoPath: string): Promise<string[]> {
+  const branchSummary = await simpleGit(repoPath).branch();
+
+  return branchSummary.all;
+}
+
+/**
+ * Lists branches currently checked out in a worktree.
+ *
+ * @param repoPath - Path to the base repository.
+ * @returns Branch names that are locked to an existing worktree.
+ */
+export async function listWorktreeBranches(repoPath: string): Promise<string[]> {
+  const output = await simpleGit(repoPath).raw(['worktree', 'list', '--porcelain']);
+  const branches: string[] = [];
+
+  for (const line of output.split('\n')) {
+    if (line.startsWith('branch refs/heads/')) {
+      branches.push(line.slice('branch refs/heads/'.length).trim());
+    }
+  }
+
+  return branches;
+}
+
+/**
  * Creates a Git worktree for the requested branch, creating the branch when needed.
  *
  * @param repoPath - Path to the base repository.

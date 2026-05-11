@@ -61,6 +61,8 @@ describe('src/commands/new', () => {
       createWorktree,
       findOriginRepo: vi.fn((repositories: Array<{ name: string; path: string }>, name: string) =>
         repositories.find((repository) => repository.name === name || repository.name.split('/').at(-1) === name) ?? null),
+      listLocalBranches: vi.fn(async () => []),
+      listWorktreeBranches: vi.fn(async () => []),
       scanOrigins,
     }));
 
@@ -72,6 +74,7 @@ describe('src/commands/new', () => {
       resolveWorkspacesDir: vi.fn(() => '/tmp/config/workspaces'),
       openWorkspace,
       validateEditorBinary,
+      sanitizeWorkspaceName: (name: string) => name.replace(/[^a-zA-Z0-9._-]/g, '_'),
     }));
 
     const { newCommand } = await import('../../../src/commands/new.js');

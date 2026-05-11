@@ -1,11 +1,11 @@
 import { getActiveConfig } from './config.js';
-import { scanOrigins } from './git.js';
+import { listLocalBranches, listWorktreeBranches, scanOrigins } from './git.js';
 import { listWorkspaces, loadWorkspace } from './workspace.js';
 
 /**
  * Completion datasets exposed to shell integration.
  */
-export type CompletionDataSet = 'repos' | 'workspace-repos' | 'workspaces';
+export type CompletionDataSet = 'repos' | 'workspace-repos' | 'workspaces' | 'branches';
 
 /**
  * Converts discovered repositories into user-friendly completion values.
@@ -58,6 +58,18 @@ export async function listCompletionValues(
     }
     case 'workspaces':
       return listWorkspaces();
+    case 'branches': {
+      const repositories = await scanOrigins(getActiveConfig().origins);
+      const [localBranchArrays, worktreeBranchArrays] = await Promise.all([
+        Promise.all(repositories.map((repository) => listLocalBranches(repository.path))),
+        Promise.all(repositories.map((repository) => listWorktreeBranches(repository.path))),
+      ]);
+      const occupiedBranches = new Set(worktreeBranchArrays.flat());
+
+      return [...new Set(localBranchArrays.flat())]
+        .filter((branch) => !occupiedBranches.has(branch))
+        .sort();
+    }
     default:
       throw new Error(`Unsupported completion dataset: ${dataset satisfies never}`);
   }

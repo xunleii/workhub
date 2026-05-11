@@ -33,6 +33,8 @@ describe('src/core/completion-data', () => {
         { name: 'gitlab/team-a/api', path: '/tmp/origins/gitlab/team-a/api' },
         { name: 'gitlab/team-a/web', path: '/tmp/origins/gitlab/team-a/web' },
       ]),
+      listLocalBranches: vi.fn(async () => []),
+      listWorktreeBranches: vi.fn(async () => []),
     }));
 
     vi.doMock('../../../src/core/workspace.js', () => ({
@@ -52,6 +54,8 @@ describe('src/core/completion-data', () => {
 
     vi.doMock('../../../src/core/git.js', () => ({
       scanOrigins: vi.fn(),
+      listLocalBranches: vi.fn(async () => []),
+      listWorktreeBranches: vi.fn(async () => []),
     }));
 
     vi.doMock('../../../src/core/workspace.js', () => ({
@@ -73,5 +77,37 @@ describe('src/core/completion-data', () => {
       'gitlab/team-a/api',
       'gitlab/team-a/web',
     ]);
+  });
+
+  it('branches dataset returns available branches across all repos excluding occupied worktrees', async () => {
+    vi.doMock('../../../src/core/config.js', () => ({
+      getActiveConfig: vi.fn(() => ({ origins: '/tmp/origins', editor: 'zed' })),
+    }));
+
+    vi.doMock('../../../src/core/git.js', () => ({
+      scanOrigins: vi.fn(async () => [
+        { name: 'repo-a', path: '/tmp/origins/repo-a' },
+        { name: 'repo-b', path: '/tmp/origins/repo-b' },
+      ]),
+      listLocalBranches: vi.fn(async (path: string) =>
+        path.endsWith('repo-a')
+          ? ['main', 'feature/x', 'feature/y']
+          : ['main', 'feature/x', 'fix/z'],
+      ),
+      listWorktreeBranches: vi.fn(async (path: string) =>
+        path.endsWith('repo-a') ? ['main'] : ['feature/x'],
+      ),
+    }));
+
+    vi.doMock('../../../src/core/workspace.js', () => ({
+      listWorkspaces: vi.fn(),
+      loadWorkspace: vi.fn(),
+    }));
+
+    const { listCompletionValues } = await import('../../../src/core/completion-data.js');
+
+    // main is in repo-a's worktree, feature/x is in repo-b's worktree — both excluded.
+    // feature/y (repo-a only) and fix/z (repo-b only) are free.
+    await expect(listCompletionValues('branches')).resolves.toEqual(['feature/y', 'fix/z']);
   });
 });

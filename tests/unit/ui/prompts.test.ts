@@ -342,3 +342,95 @@ describe('src/ui/prompts', () => {
     expect(confirm).not.toHaveBeenCalled();
   });
 });
+
+describe('promptBranchName', () => {
+  function mockClack(overrides: Record<string, unknown> = {}) {
+    vi.doMock('@clack/prompts', () => ({
+      intro: vi.fn(),
+      text: vi.fn(async () => 'typed-branch'),
+      select: vi.fn(),
+      confirm: vi.fn(),
+      isCancel: vi.fn(() => false),
+      cancel: vi.fn(),
+      outro: vi.fn(),
+      multiselect: vi.fn(),
+      ...overrides,
+    }));
+
+    vi.doMock('../../../src/core/git.js', () => ({
+      runSafetyChecks: vi.fn(),
+    }));
+
+    vi.doMock('../../../src/ui/output.js', () => ({
+      isTTY: true,
+      exitWithCode: vi.fn((code: number) => { throw new Error(`exit:${code}`); }),
+      printError: vi.fn(),
+      printPreview: vi.fn(),
+      printSafetyWarning: vi.fn(),
+    }));
+  }
+
+  afterEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  it('uses text input when no available branches are provided', async () => {
+    const clackText = vi.fn(async () => 'new-feature');
+    const clackSelect = vi.fn();
+    mockClack({ text: clackText, select: clackSelect });
+
+    const { promptBranchName } = await import('../../../src/ui/prompts.js');
+
+    await expect(promptBranchName()).resolves.toBe('new-feature');
+    expect(clackSelect).not.toHaveBeenCalled();
+    expect(clackText).toHaveBeenCalledOnce();
+  });
+
+  it('shows select when available branches are provided and returns chosen branch', async () => {
+    const clackSelect = vi.fn(async () => 'feature/existing');
+    const clackText = vi.fn();
+    mockClack({ select: clackSelect, text: clackText });
+
+    const { promptBranchName } = await import('../../../src/ui/prompts.js');
+
+    await expect(promptBranchName('', ['feature/existing', 'fix/old'])).resolves.toBe('feature/existing');
+    expect(clackSelect).toHaveBeenCalledOnce();
+    expect(clackText).not.toHaveBeenCalled();
+  });
+
+  it('falls back to text input when "New branch..." sentinel is selected', async () => {
+    const clackSelect = vi.fn(async () => '__workhub:new');
+    const clackText = vi.fn(async () => 'brand-new');
+    mockClack({ select: clackSelect, text: clackText });
+
+    const { promptBranchName } = await import('../../../src/ui/prompts.js');
+
+    await expect(promptBranchName('', ['feature/existing'])).resolves.toBe('brand-new');
+    expect(clackSelect).toHaveBeenCalledOnce();
+    expect(clackText).toHaveBeenCalledOnce();
+  });
+
+  it('exits with UserAbort when the select is cancelled', async () => {
+    const cancelToken = Symbol('cancel');
+    const clackCancel = vi.fn();
+    const exitWithCode = vi.fn((code: number) => { throw new Error(`exit:${code}`); });
+    vi.doMock('@clack/prompts', () => ({
+      select: vi.fn(async () => cancelToken),
+      text: vi.fn(),
+      isCancel: vi.fn((value: unknown) => value === cancelToken),
+      cancel: clackCancel,
+    }));
+    vi.doMock('../../../src/core/git.js', () => ({ runSafetyChecks: vi.fn() }));
+    vi.doMock('../../../src/ui/output.js', () => ({
+      isTTY: true,
+      exitWithCode,
+      printError: vi.fn(),
+    }));
+
+    const { promptBranchName } = await import('../../../src/ui/prompts.js');
+
+    await expect(promptBranchName('', ['feature/x'])).rejects.toThrow('exit:1');
+    expect(clackCancel).toHaveBeenCalledWith('Cancelled.');
+  });
+});

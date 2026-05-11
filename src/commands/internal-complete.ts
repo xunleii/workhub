@@ -7,7 +7,7 @@ import { listCompletionValues, type CompletionDataSet } from '../core/completion
  */
 export const internalCompleteCommand = new Command('__complete')
   .description('Internal completion helpers')
-  .argument('<dataset>', 'completion dataset (workspaces, repos, workspace-repos)')
+  .argument('<dataset>', 'completion dataset (workspaces, repos, workspace-repos, branches)')
   .argument('[workspace]', 'workspace name when completing workspace repositories')
   .action(async (dataset: CompletionDataSet, workspaceName?: string) => {
     try {

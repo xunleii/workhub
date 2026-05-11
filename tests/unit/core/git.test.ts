@@ -12,6 +12,8 @@ import {
   createWorktree,
   findOriginRepo,
   getWorkspaceStatus,
+  listLocalBranches,
+  listWorktreeBranches,
   runSafetyChecks,
   scanOrigins,
 } from '../../../src/core/git.js';
@@ -152,6 +154,81 @@ describe('git worktree helpers', () => {
       ).rejects.toThrow(`Worktree path already exists: ${existingWorktreeDirectory}`);
     } finally {
       await rm(existingWorktreeDirectory, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('branch listing helpers', () => {
+  let repositoryDirectory: string;
+
+  beforeEach(async () => {
+    repositoryDirectory = await mkdtemp(join(tmpdir(), 'workhub-branch-list-'));
+
+    execSync('git init', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git config user.email "test@test.com"', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git config user.name "Test User"', { cwd: repositoryDirectory, stdio: 'ignore' });
+    await writeFile(join(repositoryDirectory, 'README.md'), 'init\n', 'utf8');
+    execSync('git add README.md', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git -c commit.gpgsign=false commit -m "init"', { cwd: repositoryDirectory, stdio: 'ignore' });
+  });
+
+  afterEach(async () => {
+    await rm(repositoryDirectory, { recursive: true, force: true });
+  });
+
+  it('listLocalBranches returns all local branches', async () => {
+    execSync('git branch feature/a', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git branch feature/b', { cwd: repositoryDirectory, stdio: 'ignore' });
+
+    const branches = await listLocalBranches(repositoryDirectory);
+
+    expect(branches).toContain('feature/a');
+    expect(branches).toContain('feature/b');
+  });
+
+  it('listWorktreeBranches returns only branches checked out in worktrees', async () => {
+    execSync('git branch feature/in-worktree', { cwd: repositoryDirectory, stdio: 'ignore' });
+    execSync('git branch feature/free', { cwd: repositoryDirectory, stdio: 'ignore' });
+
+    const worktreeDirectory = join(repositoryDirectory, '.git', 'worktrees', 'test-wt');
+
+    try {
+      execSync(`git worktree add ${worktreeDirectory} feature/in-worktree`, {
+        cwd: repositoryDirectory,
+        stdio: 'ignore',
+      });
+
+      const worktreeBranches = await listWorktreeBranches(repositoryDirectory);
+
+      expect(worktreeBranches).toContain('feature/in-worktree');
+      expect(worktreeBranches).not.toContain('feature/free');
+    } finally {
+      await rm(worktreeDirectory, { recursive: true, force: true });
+    }
+  });
+
+  it('listWorktreeBranches does not include a branch for a detached HEAD worktree', async () => {
+    execSync('git branch feature/tracked', { cwd: repositoryDirectory, stdio: 'ignore' });
+
+    const currentHead = execSync('git rev-parse HEAD', {
+      cwd: repositoryDirectory,
+      encoding: 'utf8',
+    }).trim();
+    const worktreeDirectory = join(repositoryDirectory, '.git', 'worktrees', 'test-detached');
+
+    try {
+      execSync(`git worktree add --detach ${worktreeDirectory} ${currentHead}`, {
+        cwd: repositoryDirectory,
+        stdio: 'ignore',
+      });
+
+      const worktreeBranches = await listWorktreeBranches(repositoryDirectory);
+
+      // The detached worktree must not add any extra branch entry.
+      // feature/tracked is free (no worktree), so it must be absent.
+      expect(worktreeBranches).not.toContain('feature/tracked');
+    } finally {
+      await rm(worktreeDirectory, { recursive: true, force: true });
     }
   });
 });

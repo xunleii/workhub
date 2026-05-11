@@ -116,8 +116,8 @@ export async function promptWorkspaceName(): Promise<string> {
         return 'Name is required';
       }
 
-      if (!/^[a-zA-Z0-9-]+$/.test(trimmedValue)) {
-        return 'Use only letters, numbers, and hyphens';
+      if (/[\x00-\x1f\x7f]/.test(trimmedValue)) {
+        return 'Name cannot contain control characters';
       }
 
       return undefined;
@@ -171,13 +171,38 @@ export async function promptRepoSelection(repositories: OriginRepo[]): Promise<O
   return sortedRepositories.filter((repository) => selectedNames.includes(repository.name));
 }
 
+const NEW_BRANCH_SENTINEL = '__workhub:new';
+
 /**
- * Prompts for a branch name, optionally seeding a default value.
+ * Prompts for a branch name, optionally offering existing branches as choices.
  *
- * @param defaultBranch - Initial branch value shown to the user.
+ * When `availableBranches` is non-empty a select is shown first. Choosing
+ * "New branch..." falls back to the free-text input.
+ *
+ * @param defaultBranch - Initial value for the free-text fallback.
+ * @param availableBranches - Existing branches to offer as selectable options.
  * @returns Normalized branch name.
  */
-export async function promptBranchName(defaultBranch = ''): Promise<string> {
+export async function promptBranchName(defaultBranch = '', availableBranches: string[] = []): Promise<string> {
+  if (availableBranches.length > 0) {
+    const selected = await clack.select({
+      message: 'Branch name:',
+      options: [
+        { value: NEW_BRANCH_SENTINEL, label: 'New branch...' },
+        ...availableBranches.map((branch) => ({ value: branch, label: branch })),
+      ],
+    });
+
+    if (clack.isCancel(selected)) {
+      clack.cancel('Cancelled.');
+      exitWithCode(ExitCode.UserAbort);
+    }
+
+    if (selected !== NEW_BRANCH_SENTINEL) {
+      return selected as string;
+    }
+  }
+
   const branchName = await clack.text({
     message: 'Branch name:',
     initialValue: defaultBranch,

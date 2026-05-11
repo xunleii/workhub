@@ -6,6 +6,7 @@ import yaml from 'js-yaml';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { WorkspaceConfig } from '../../../src/types.js';
+import { sanitizeWorkspaceName } from '../../../src/core/workspace.js';
 
 describe('src/core/workspace', () => {
   let testDirectory: string;
@@ -138,17 +139,29 @@ describe('src/core/workspace', () => {
     await expect(access(worktreeDirectory)).resolves.toBeUndefined();
   });
 
-  it('name validation rejects invalid characters before writing', async () => {
-    const { resolveWorkspacesDir, saveWorkspace } = await import('../../../src/core/workspace.js');
+  it('saveWorkspace stores names with spaces under a sanitized filename', async () => {
+    const { resolveWorkspacesDir, saveWorkspace, loadWorkspace } = await import('../../../src/core/workspace.js');
 
-    await expect(
-      saveWorkspace({
-        ...baseWorkspaceConfig,
-        name: 'my workspace!',
-      }),
-    ).rejects.toThrow('Invalid workspace name: "my workspace!". Use only alphanumeric characters and hyphens.');
+    const spacedConfig = { ...baseWorkspaceConfig, name: 'my feature/AUTH 123' };
 
-    await expect(access(join(resolveWorkspacesDir(), 'my workspace!.yaml'))).rejects.toThrow();
+    await saveWorkspace(spacedConfig);
+
+    // File uses sanitized name; original name is NOT a file.
+    await expect(access(join(resolveWorkspacesDir(), 'my_feature_AUTH_123.yaml'))).resolves.toBeUndefined();
+    await expect(access(join(resolveWorkspacesDir(), 'my feature/AUTH 123.yaml'))).rejects.toThrow();
+
+    // loadWorkspace accepts either display or sanitized form.
+    await expect(loadWorkspace('my feature/AUTH 123')).resolves.toMatchObject({ name: 'my feature/AUTH 123' });
+    await expect(loadWorkspace('my_feature_AUTH_123')).resolves.toMatchObject({ name: 'my feature/AUTH 123' });
+  });
+
+  it('listWorkspaces returns display names (not sanitized filenames)', async () => {
+    const { listWorkspaces, saveWorkspace } = await import('../../../src/core/workspace.js');
+
+    await saveWorkspace({ ...baseWorkspaceConfig, name: 'ticket-1234' });
+    await saveWorkspace({ ...baseWorkspaceConfig, name: 'my feature/AUTH 123' });
+
+    await expect(listWorkspaces()).resolves.toEqual(['my feature/AUTH 123', 'ticket-1234']);
   });
 
   it('saveWorkspace creates the workspaces directory automatically', async () => {
@@ -198,6 +211,15 @@ describe('src/core/workspace', () => {
 
     expect(buildWorktreePath(repoPath, 'ticket-1234')).toBe(
       join(repoPath, '.git', 'worktrees', 'ticket-1234', basename(repoPath)),
+    );
+  });
+
+  it('buildWorktreePath sanitizes names with spaces and slashes in the path', async () => {
+    const { buildWorktreePath } = await import('../../../src/core/workspace.js');
+    const repoPath = '/tmp/repos/group-a/repo-a';
+
+    expect(buildWorktreePath(repoPath, 'my feature/AUTH 123')).toBe(
+      join(repoPath, '.git', 'worktrees', 'my_feature_AUTH_123', basename(repoPath)),
     );
   });
 
@@ -275,5 +297,28 @@ describe('src/core/workspace', () => {
     const { listWorkspaceSummaries } = await import('../../../src/core/workspace.js');
 
     await expect(listWorkspaceSummaries()).resolves.toEqual([]);
+  });
+});
+
+describe('sanitizeWorkspaceName', () => {
+  it('leaves safe characters unchanged', () => {
+    expect(sanitizeWorkspaceName('ticket-1234')).toBe('ticket-1234');
+    expect(sanitizeWorkspaceName('my_workspace.v2')).toBe('my_workspace.v2');
+  });
+
+  it('replaces spaces with underscores', () => {
+    expect(sanitizeWorkspaceName('my workspace')).toBe('my_workspace');
+  });
+
+  it('replaces slashes with underscores', () => {
+    expect(sanitizeWorkspaceName('feature/AUTH-123')).toBe('feature_AUTH-123');
+  });
+
+  it('replaces all unsafe characters', () => {
+    expect(sanitizeWorkspaceName('foo bar/baz@qux')).toBe('foo_bar_baz_qux');
+  });
+
+  it('two names that differ only in unsafe chars produce identical sanitized forms', () => {
+    expect(sanitizeWorkspaceName('my workspace')).toBe(sanitizeWorkspaceName('my_workspace'));
   });
 });

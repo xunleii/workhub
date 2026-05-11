@@ -2,12 +2,13 @@ import { Command } from 'commander';
 import { join } from 'node:path';
 
 import { getActiveConfig } from '../core/config.js';
-import { createWorktree, findOriginRepo, scanOrigins } from '../core/git.js';
+import { createWorktree, findOriginRepo, listLocalBranches, listWorktreeBranches, scanOrigins } from '../core/git.js';
 import {
   buildWorktreePath,
   listWorkspaces,
   openWorkspace,
   resolveWorkspacesDir,
+  sanitizeWorkspaceName,
   saveWorkspace,
   validateEditorBinary,
 } from '../core/workspace.js';
@@ -78,7 +79,9 @@ export const newCommand = new Command('new')
       exitWithCode(ExitCode.ToolError);
     }
 
-    if (existingWorkspaceNames.includes(workspaceName)) {
+    const sanitizedName = sanitizeWorkspaceName(workspaceName);
+
+    if (existingWorkspaceNames.some((n) => sanitizeWorkspaceName(n) === sanitizedName)) {
       printError(`Workspace already exists: ${workspaceName}`);
       exitWithCode(ExitCode.ToolError);
     }
@@ -101,7 +104,22 @@ export const newCommand = new Command('new')
     const selectedRepositories = options.repo.length > 0
       ? findSelectedRepositories(repositories, options.repo)
       : await promptRepoSelection(repositories);
-    const branchName = options.branch ?? (isTTY ? await promptBranchName() : undefined);
+
+    let availableBranches: string[] = [];
+
+    if (isTTY && !options.branch) {
+      const [localBranchArrays, worktreeBranchArrays] = await Promise.all([
+        Promise.all(selectedRepositories.map((repo) => listLocalBranches(repo.path))),
+        Promise.all(selectedRepositories.map((repo) => listWorktreeBranches(repo.path))),
+      ]);
+      const occupiedBranches = new Set(worktreeBranchArrays.flat());
+
+      availableBranches = [...new Set(localBranchArrays.flat())]
+        .filter((branch) => !occupiedBranches.has(branch))
+        .sort();
+    }
+
+    const branchName = options.branch ?? (isTTY ? await promptBranchName('', availableBranches) : undefined);
 
     if (!branchName) {
       printError('--branch is required in non-TTY mode');
