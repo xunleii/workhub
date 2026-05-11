@@ -1,10 +1,44 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { formatRepos } from '../../../src/commands/list.js';
+
 afterEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
   vi.doUnmock('../../../src/core/workspace.js');
   vi.doUnmock('../../../src/ui/output.js');
+});
+
+describe('formatRepos', () => {
+  it('returns a single repo unchanged', () => {
+    expect(formatRepos(['ww/toto/aa'])).toBe('ww/toto/aa');
+  });
+
+  it('returns flat repos unchanged', () => {
+    expect(formatRepos(['aa', 'bb'])).toBe('{aa,bb}');
+  });
+
+  it('collapses repos sharing the same parent with braces', () => {
+    expect(formatRepos(['ww/toto/aa', 'ww/toto/bb', 'ww/toto/cc'])).toBe('ww/toto/{aa,bb,cc}');
+  });
+
+  it('groups by immediate parent only — no nested braces', () => {
+    expect(formatRepos(['ww/toto/aa', 'ww/toto/bb', 'ww/toto/cc', 'ww/titi/aa']))
+      .toBe('ww/toto/{aa,bb,cc}, ww/titi/aa');
+  });
+
+  it('preserves insertion order of parent groups', () => {
+    expect(formatRepos(['ww/titi/aa', 'ww/toto/aa', 'ww/toto/bb']))
+      .toBe('ww/titi/aa, ww/toto/{aa,bb}');
+  });
+
+  it('uses the provided group separator', () => {
+    expect(formatRepos(['ww/toto/aa', 'ww/titi/aa'], ',')).toBe('ww/toto/aa,ww/titi/aa');
+  });
+
+  it('handles repos without a parent path', () => {
+    expect(formatRepos(['aa', 'bb', 'cc'])).toBe('{aa,bb,cc}');
+  });
 });
 
 describe('src/commands/list', () => {
@@ -53,8 +87,16 @@ describe('src/commands/list', () => {
     const { listCommand, mocks } = await loadListCommand({
       isTTY: false,
       workspaces: [
-        { name: 'ticket-1234', branch: 'feature/x', paths: [{ repo: 'repo-a', path: '/tmp/a' }] },
-        { name: 'my-fix', branch: 'fix/y', paths: [{ repo: 'repo-a', path: '/tmp/a' }, { repo: 'repo-b', path: '/tmp/b' }] },
+        { name: 'ticket-1234', branch: 'feature/x', paths: [{ repo: 'ww/toto/aa', path: '/tmp/a' }] },
+        {
+          name: 'my-fix',
+          branch: 'fix/y',
+          paths: [
+            { repo: 'ww/toto/aa', path: '/tmp/a' },
+            { repo: 'ww/toto/bb', path: '/tmp/b' },
+            { repo: 'ww/titi/aa', path: '/tmp/c' },
+          ],
+        },
       ],
     });
 
@@ -62,15 +104,22 @@ describe('src/commands/list', () => {
 
     const output = mocks.stdoutWrite.mock.calls.map((call) => call[0]).join('');
 
-    expect(output).toContain('ticket-1234\tfeature/x\trepo-a\n');
-    expect(output).toContain('my-fix\tfix/y\trepo-a,repo-b\n');
+    expect(output).toContain('ticket-1234\tfeature/x\tww/toto/aa\n');
+    expect(output).toContain('my-fix\tfix/y\tww/toto/{aa,bb},ww/titi/aa\n');
   });
 
   it('outputs a formatted table with header in TTY mode', async () => {
     const { listCommand, mocks } = await loadListCommand({
       isTTY: true,
       workspaces: [
-        { name: 'ticket-1234', branch: 'feature/x', paths: [{ repo: 'repo-a', path: '/tmp/a' }] },
+        {
+          name: 'ticket-1234',
+          branch: 'feature/x',
+          paths: [
+            { repo: 'ww/toto/aa', path: '/tmp/a' },
+            { repo: 'ww/toto/bb', path: '/tmp/b' },
+          ],
+        },
       ],
     });
 
@@ -83,7 +132,7 @@ describe('src/commands/list', () => {
     expect(output).toContain('REPOS');
     expect(output).toContain('ticket-1234');
     expect(output).toContain('feature/x');
-    expect(output).toContain('repo-a');
+    expect(output).toContain('ww/toto/{aa,bb}');
   });
 
   it('column widths adapt to the longest name and branch in TTY mode', async () => {
@@ -103,3 +152,4 @@ describe('src/commands/list', () => {
     expect(header).toMatch(/^NAME\s+BRANCH\s+REPOS\n$/);
   });
 });
+

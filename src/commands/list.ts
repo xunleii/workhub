@@ -4,6 +4,50 @@ import { listWorkspaces, loadWorkspace } from '../core/workspace.js';
 import { isTTY, printSuccess } from '../ui/output.js';
 
 /**
+ * Collapses a list of repository names that share the same parent path into
+ * brace-expansion notation (one level only).
+ *
+ * Examples:
+ *   ["ww/toto/aa","ww/toto/bb","ww/titi/aa"]
+ *   → "ww/toto/{aa,bb}, ww/titi/aa"   (groupSep = ", ")
+ *   → "ww/toto/{aa,bb},ww/titi/aa"    (groupSep = ",")
+ *
+ * @param repos - Ordered repository names.
+ * @param groupSep - Separator between groups (", " for TTY, "," for non-TTY).
+ */
+export function formatRepos(repos: string[], groupSep = ', '): string {
+  // Preserve insertion order of parents.
+  const groups = new Map<string, string[]>();
+
+  for (const repo of repos) {
+    const lastSlash = repo.lastIndexOf('/');
+    const parent = lastSlash >= 0 ? repo.slice(0, lastSlash) : '';
+    const leaf = lastSlash >= 0 ? repo.slice(lastSlash + 1) : repo;
+
+    const bucket = groups.get(parent);
+
+    if (bucket) {
+      bucket.push(leaf);
+    } else {
+      groups.set(parent, [leaf]);
+    }
+  }
+
+  const parts: string[] = [];
+
+  for (const [parent, leaves] of groups) {
+    if (leaves.length === 1) {
+      parts.push(parent ? `${parent}/${leaves[0]}` : leaves[0]);
+    } else {
+      const braces = `{${leaves.join(',')}}`;
+      parts.push(parent ? `${parent}/${braces}` : braces);
+    }
+  }
+
+  return parts.join(groupSep);
+}
+
+/**
  * Implements the `wh list` command.
  */
 export const listCommand = new Command('list')
@@ -25,14 +69,14 @@ export const listCommand = new Command('list')
       process.stdout.write(`${'NAME'.padEnd(nameWidth)}  ${'BRANCH'.padEnd(branchWidth)}  REPOS\n`);
 
       for (const workspace of workspaces) {
-        const repos = workspace.paths.map((entry) => entry.repo).join(', ');
+        const repos = formatRepos(workspace.paths.map((entry) => entry.repo), ', ');
         process.stdout.write(
           `${workspace.name.padEnd(nameWidth)}  ${workspace.branch.padEnd(branchWidth)}  ${repos}\n`,
         );
       }
     } else {
       for (const workspace of workspaces) {
-        const repos = workspace.paths.map((entry) => entry.repo).join(',');
+        const repos = formatRepos(workspace.paths.map((entry) => entry.repo), ',');
         process.stdout.write(`${workspace.name}\t${workspace.branch}\t${repos}\n`);
       }
     }
